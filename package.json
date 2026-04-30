@@ -1,0 +1,23 @@
+{
+  "name": "aevum",
+  "version": "1.0.2",
+  "description": "A contemplative new-tab extension that visualizes the passage of time through a living grid and precision chronometer.",
+  "main": "script.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "browser-extension",
+    "new-tab",
+    "time",
+    "visualization"
+  ],
+  "private": true,
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/chrome": "^0.1.40",
+    "@types/firefox-webext-browser": "^143.0.0",
+    "typescript": "^5.9.3"
+  }
+}
