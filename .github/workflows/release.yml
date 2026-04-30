@@ -1,0 +1,47 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build TypeScript
+        run: npx tsc
+
+      - name: Create icons directory
+        run: mkdir -p icons
+
+      - name: Create icons (using ImageMagick)
+        run: |
+          sudo apt-get update && sudo apt-get install -y imagemagick
+          convert icon.png -resize 48x48 icons/icon-48.png
+          convert icon.png -resize 96x96 icons/icon-96.png
+          convert icon.png -resize 128x128 icons/icon-128.png
+
+      - name: Create Firefox extension zip
+        run: |
+          zip -r aevum-firefox.zip manifest.json newtab.html styles.css script.js icons/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: aevum-firefox.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
