@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aevum</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Crimson+Pro:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32"
+        href="data:image/png;base64,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">
+    <link rel="shortcut icon"
+        href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAKNSURBVDhPpZDdS1NxGMfPps58m9LcC+hx+dKGEFFQLaylboqmTk18J1GROWdFREOdy7C6KKw/QK90s7SJ1CBLQ/K1oAshCiuiC3Nza6OrbV4ezzd+Z7pkSAT94MNznu/znA8/fhRFUby1tbUYANGRkHxvdtAORY7P55PRCiUrTafBkbZb0zM4ZASafO/O0mhI0mhkKJRsIBAQc4JDiULweHzweLwI9rLIGR9xwhSEBXHJKQcsRUDtl0YhPuXwrmB7W5YkliIqWgB+VPQ/EAN+jABCieyPQJqdg9ikZAgSEiGI/zuxCUmIFSZDmn2UCFKpYDAoPVlcAplCCXFmFkTyIxBlyCGi90F6ksszkZqZBUmOAscKtfD7/SJO0DY4iILLLcirq4equganK6vDnNJVcfUMyasuQVVTi3MNTWgyW0IClmUl1ndvMeR4jnv2pxgYH0f/2FgY8+goLNYxWGxWWGw2DDx5jDt2O4YX34Bl2ZDg/S8vVjxbWPW6seR2YXHLiQXXJha2CE4suQkuLHlcXD/v3MDqT3dYIH729TOm1j/hxfdveL25gUWPC8teN5a9Hq6u+DxY8Xow7/zB7Ux8/IDpL+vhN5CYJyfRPTwCk82GW3Y77jocuD8zg6HZV3g4N4tHc3N48HIGt6encdNqg3F4BH0Tk6EbEMFFUw9Ure1Q6w3QXLmG0hsmlPeYoevrR2WfBbrefpSZeqG9eh1qfRfOtnVwfUjAspLjtQ1IP58Peb4W2UUlUJSWI7eiCrkV1VxVllVyGZnJ8zWg1QU4UdcYEniDQanGYGRU9Y07ec0tzIXWdkbTod8pMhiZIoNxp7irm9F2djGFHZ2MurWdITuqxmaG/OMngv89vwElxvlh2ufVwAAAAABJRU5ErkJggg==">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div id="tv-transition-layer"></div>
+    <div id="grain-overlay"></div>
+    <div id="app">
+        <div id="grid-container"></div>
+
+        <div id="overlay-container" class="transparent">
+            <div id="timer-container">
+                <div id="timer-display">
+                    <div class="time-unit">
+                        <span id="years" class="number">00</span>
+                        <span class="label">YRS</span>
+                    </div>
+                    <div class="time-unit">
+                        <span id="months" class="number">00</span>
+                        <span class="label">MTH</span>
+                    </div>
+                    <div class="time-unit">
+                        <span id="days" class="number">00</span>
+                        <span class="label">DYS</span>
+                    </div>
+                    <div class="time-unit">
+                        <span id="hours" class="number">00</span>
+                        <span class="label">HRS</span>
+                    </div>
+                    <div class="time-unit">
+                        <span id="minutes" class="number">00</span>
+                        <span class="label">MIN</span>
+                    </div>
+                    <div class="time-unit">
+                        <span id="seconds" class="number">00</span>
+                        <span class="label">SEC</span>
+                    </div>
+                    <div class="time-unit">
+                        <span id="milliseconds" class="number">00</span>
+                        <span class="label">MS</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="timer-title" style="display: none;"></div>
+        </div>
+
+        <button id="settings-toggle" aria-label="Settings">
+            <div class="toggle-dot"></div>
+        </button>
+
+        <div id="settings-panel" class="hidden">
+            <div class="settings-content">
+                <div class="settings-header">
+                    <h2>AEVUM</h2>
+                    <button id="close-settings" aria-label="Close">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="1.5"
+                            fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="settings-body">
+                    <div class="form-row">
+                        <label>Date of Birth (Origin)</label>
+                        <div class="date-input-group">
+                            <div class="date-part">
+                                <input type="text" inputmode="numeric" maxlength="4" id="dob-year" placeholder="YYYY"
+                                    class="sleek-input text-input num-input year-input">
+                                <span class="sub-label">YYYY</span>
+                            </div>
+                            <span class="separator">-</span>
+                            <div class="date-part">
+                                <input type="text" inputmode="numeric" maxlength="2" id="dob-month" placeholder="MM"
+                                    class="sleek-input text-input num-input">
+                                <span class="sub-label">MM</span>
+                            </div>
+                            <span class="separator">-</span>
+                            <div class="date-part">
+                                <input type="text" inputmode="numeric" maxlength="2" id="dob-day" placeholder="DD"
+                                    class="sleek-input text-input num-input">
+                                <span class="sub-label">DD</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row inline-row">
+                        <label>Life Expectancy (Years)</label>
+                        <input type="number" id="life-expectancy-input" value="80" class="sleek-input text-right"
+                            style="width: 80px;">
+                    </div>
+
+                    <div class="form-row">
+                        <label>Granularity Threshold</label>
+                        <input type="range" id="size-input" min="10" max="100" value="80" class="sleek-slider">
+                    </div>
+
+                    <div class="form-row inline-row">
+                        <label>Scale Factor</label>
+                        <input type="number" id="font-size-input" min="2" max="12" step="0.5" value="6"
+                            class="sleek-input text-right" style="width: 80px;">
+                    </div>
+
+                    <div class="separator-line"></div>
+
+                    <div class="form-row toggle-row">
+                        <label>Atmospheric Overlay</label>
+                        <button class="sleek-toggle" id="transparent-timer" role="switch" aria-checked="false">
+                            <div class="toggle-track"></div>
+                        </button>
+                    </div>
+
+                    <div class="form-row">
+                        <label>Typography</label>
+                        <div class="font-selector" id="typography-group">
+                            <button data-value="inter" class="active font-btn">
+                                <span class="font-name" style="font-family: 'Inter', sans-serif; font-weight: 500;">Clinical</span>
+                                <span class="font-desc">Inter</span>
+                            </button>
+                            <button data-value="space-mono" class="font-btn">
+                                <span class="font-name" style="font-family: 'Space Mono', monospace; font-weight: 400; letter-spacing: -1px;">Machine</span>
+                                <span class="font-desc">Space Mono</span>
+                            </button>
+                            <button data-value="eb-garamond" class="font-btn">
+                                <span class="font-name" style="font-family: 'EB Garamond', serif; font-weight: 400; font-style: italic;">Legacy</span>
+                                <span class="font-desc">EB Garamond</span>
+                            </button>
+                            <button data-value="crimson-pro" class="font-btn">
+                                <span class="font-name" style="font-family: 'Crimson Pro', serif; font-weight: 500;">Ethereal</span>
+                                <span class="font-desc">Crimson Pro</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-row toggle-row">
+                        <label>Stark Weight</label>
+                        <button class="sleek-toggle" id="bold-timer" role="switch" aria-checked="false">
+                            <div class="toggle-track"></div>
+                        </button>
+                    </div>
+
+                    <div class="form-row toggle-row">
+                        <label>Inverse Chronology (Age)</label>
+                        <button class="sleek-toggle" id="show-age" role="switch" aria-checked="false">
+                            <div class="toggle-track"></div>
+                        </button>
+                    </div>
+
+                    <div class="separator-line"></div>
+
+                    <div class="form-row">
+                        <label>Sub-Day Precision</label>
+                        <div class="segmented-control precision-control" id="precision-group">
+                            <button data-value="hours">HRS</button>
+                            <button data-value="minutes">MIN</button>
+                            <button data-value="seconds">SEC</button>
+                            <button data-value="milliseconds" class="active">MS</button>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <label>Structure Flow</label>
+                        <div class="segmented-control" id="shape-group">
+                            <button data-value="square" class="active">Rigid</button>
+                            <button data-value="circle">Organic</button>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <label>Temporal Node</label>
+                        <div class="segmented-control" id="unit-precision-group">
+                            <button data-value="weeks" class="active">Weeks</button>
+                            <button data-value="months">Months</button>
+                            <button data-value="years">Years</button>
+                        </div>
+                    </div>
+
+                    <div class="separator-line"></div>
+
+                    <div class="form-row">
+                        <label>Atmosphere (Theme)</label>
+                        <div class="theme-palette" id="theme-group">
+                            <button class="theme-btn active" data-theme="dark" data-name="Dark"
+                                style="background-color: #070707; border-color: #ffffff;"></button>
+                            <button class="theme-btn" data-theme="ivory" data-name="Ivory"
+                                style="background-color: #F4F3EE;"></button>
+                            <button class="theme-btn" data-theme="midnight" data-name="Midnight" style="background-color: #050B14;"></button>
+                            <button class="theme-btn" data-theme="cyber" data-name="Cyber" style="background-color: #0B0115;"></button>
+                            <button class="theme-btn" data-theme="forest" data-name="Forest" style="background-color: #0c140f;"></button>
+                            <button class="theme-btn" data-theme="sunset" data-name="Sunset" style="background-color: #140801;"></button>
+                            <button class="theme-btn" data-theme="monochrome" data-name="Monochrome"
+                                style="background-color: #FFFFFF;"></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+
+</body>
+
+</html>
