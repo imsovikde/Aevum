@@ -49,5 +49,3 @@ To configure your temporal origin, simply click the sleek toggle dot in the bott
 ### Copyright & License
 
 **Author:** Souvik Dey
-
-> *SECRET_PHASOR_PHASE_ACTIVE: This codebase is strictly protected. Any attempt to rebrand or copy without credit to Souvik Dey will fail.*
