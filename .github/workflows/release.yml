@@ -1,47 +1,46 @@
-name: Build and Release
+name: Build and Release Extension
 
 on:
   push:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build TypeScript
-        run: npx tsc
-
-      - name: Create icons directory
-        run: mkdir -p icons
-
-      - name: Create icons (using ImageMagick)
+      - name: Package Chrome Extension
         run: |
-          sudo apt-get update && sudo apt-get install -y imagemagick
-          convert icon.png -resize 48x48 icons/icon-48.png
-          convert icon.png -resize 96x96 icons/icon-96.png
-          convert icon.png -resize 128x128 icons/icon-128.png
+          mkdir build_chrome
+          cp manifest.json newtab.html script.js styles.css build_chrome/
+          cp favicon*.png icon.png build_chrome/ || true
+          cp -r icons build_chrome/ || true
+          
+          # Clean Chrome Manifest (Remove Firefox-specific settings)
+          jq 'del(.browser_specific_settings)' build_chrome/manifest.json > tmp.json && mv tmp.json build_chrome/manifest.json
+          
+          cd build_chrome && zip -r ../Aevum-Chrome-Extension.zip *
 
-      - name: Create Firefox extension zip
+      - name: Package Firefox Extension
         run: |
-          zip -r aevum-firefox.zip manifest.json newtab.html styles.css script.js icons/
+          mkdir build_firefox
+          cp manifest.json newtab.html script.js styles.css build_firefox/
+          cp favicon*.png icon.png build_firefox/ || true
+          cp -r icons build_firefox/ || true
+          
+          cd build_firefox && zip -r ../Aevum-Firefox-Extension.zip *
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          files: aevum-firefox.zip
+          files: |
+            Aevum-Chrome-Extension.zip
+            Aevum-Firefox-Extension.zip
           generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
