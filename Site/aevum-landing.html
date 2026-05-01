@@ -1,0 +1,4515 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aevum — Your Life, Rendered in Real Time</title>
+  <meta name="description"
+    content="Aevum replaces your new tab with a live grid of your life. Open source. No tracking. Built with physics.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32' fill='none'%3E%3Cpath d='M16 3L29 25H3L16 3Z' stroke='rgba(255,255,255,0.6)' stroke-width='1' fill='none'/%3E%3Cpath d='M16 25L3 25L9.5 14L22.5 14L29 25Z' fill='rgba(255,255,255,0.7)' stroke='none'/%3E%3Cpath d='M16 3L29 25H3L16 3Z' stroke='rgba(255,255,255,0.6)' stroke-width='1' fill='none'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* 1. CSS Custom Properties */
+    :root {
+      --void: #070707;
+      --surface: rgba(12, 12, 12, 0.7);
+      --surface-hover: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.08);
+      --text-primary: #ededed;
+      --text-secondary: #888888;
+      --text-inverse: #070707;
+      --accent: #e0e0e0;
+      --accent-bright: #ffffff;
+      --unit-future: #1a1a1a;
+      --unit-past: #ffffff;
+      --pulse: rgba(255, 255, 255, 0.8);
+      --pulse-glow: rgba(255, 255, 255, 0.25);
+      --glow-soft: 0 0 10px rgba(255, 255, 255, 0.25);
+      --glow-strong: 0 0 20px rgba(255, 255, 255, 0.4);
+      --shadow-lg: 0 30px 60px rgba(0, 0, 0, 0.8);
+      --shadow-xl: 0 40px 100px rgba(0, 0, 0, 0.8);
+      --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-snappy: cubic-bezier(0.86, 0, 0.07, 1);
+      /* Fluid simulation color aliases — matched to project script.js readColors() */
+      --box-future: #1a1a1a;
+      --box-past-base: #ffffff;
+    }
+
+    /* 2. Base Reset */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--void);
+      color: var(--text-primary);
+      min-height: 100dvh;
+      cursor: crosshair;
+      overflow-x: hidden;
+    }
+
+    img,
+    picture,
+    video,
+    canvas,
+    svg {
+      display: block;
+      max-width: 100%;
+    }
+
+    button {
+      cursor: crosshair;
+      background: none;
+      border: none;
+      font: inherit;
+      color: inherit;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      font-weight: 300;
+    }
+
+    /* 3. Grain Overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+    }
+
+    /* 4. Navigation — Floating Pill */
+    #main-nav {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      height: 60px;
+      z-index: 1000;
+      background: transparent;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      border: 1px solid transparent;
+      border-radius: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 clamp(1.5rem, 5vw, 4rem);
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+        top 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+        height 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+        background 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+        border-radius 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+        border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+        padding 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+        backdrop-filter 0.5s ease;
+      will-change: width, border-radius, background;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .nav-logo svg {
+      flex-shrink: 0;
+    }
+
+    .nav-logo-text {
+      letter-spacing: 0.3em;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+
+    .nav-center {
+      display: flex;
+      gap: 2.5rem;
+      align-items: center;
+    }
+
+    .nav-link {
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      position: relative;
+      padding: 4px 10px;
+      border-radius: 4px;
+      transition: color 0.3s ease, background 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--text-primary);
+      transition: width 0.2s ease;
+    }
+
+    .nav-link:hover {
+      color: var(--text-primary);
+    }
+
+    .nav-link:hover::after {
+      width: 100%;
+    }
+
+    .nav-right {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .btn-support {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--accent);
+      padding: 8px 18px;
+      border-radius: 2px;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      transition: all 0.2s ease;
+      cursor: crosshair;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .btn-support-icon {
+      flex-shrink: 0;
+    }
+
+    .btn-support:hover {
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
+    }
+
+    .btn-chrome-nav {
+      background: var(--accent);
+      color: var(--text-inverse);
+      padding: 8px 18px;
+      border-radius: 2px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      transition: all 0.2s ease;
+      cursor: crosshair;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn-chrome-nav:hover {
+      background: var(--accent-bright);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    }
+
+    /* 5. Hero Section */
+    #hero {
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      position: relative;
+      overflow: hidden;
+      padding-top: 60px;
+    }
+
+    .hero-content {
+      max-width: 720px;
+      width: 100%;
+      padding: 0 clamp(1.5rem, 5vw, 4rem);
+    }
+
+    .eyebrow {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.25em;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeUp 0.6s var(--ease-smooth) 0.2s forwards;
+    }
+
+    .hero-headline {
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 300;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      color: var(--text-primary);
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeUp 0.6s var(--ease-smooth) 0.4s forwards;
+    }
+
+    #headline-word {
+      position: relative;
+      display: inline-block;
+    }
+
+    .strikethrough-line {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 1px;
+      background: var(--accent-bright);
+      width: 0;
+      transform: translateY(-50%);
+    }
+
+    .hero-sub {
+      font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+      color: var(--text-secondary);
+      font-weight: 400;
+      line-height: 1.7;
+      max-width: 480px;
+      margin-bottom: 2.5rem;
+      opacity: 0;
+      animation: fadeUp 0.6s var(--ease-smooth) 0.8s forwards;
+    }
+
+    .hero-cta-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+      opacity: 0;
+      animation: fadeUp 0.6s var(--ease-smooth) 1.0s forwards;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--text-inverse);
+      padding: 14px 28px;
+      border-radius: 2px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      transition: all 0.2s var(--ease-smooth);
+      display: inline-block;
+      cursor: crosshair;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-bright);
+      box-shadow: 0 0 30px rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-secondary);
+      padding: 14px 28px;
+      border-radius: 2px;
+      font-size: 0.875rem;
+      letter-spacing: 0.06em;
+      transition: all 0.2s ease;
+      display: inline-block;
+      cursor: crosshair;
+    }
+
+    .btn-ghost:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+      color: var(--text-primary);
+    }
+
+    .social-proof {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      opacity: 0;
+      animation: fadeUp 0.6s var(--ease-smooth) 1.2s forwards;
+    }
+
+    .social-proof span {
+      opacity: 0.5;
+      margin: 0 0.4em;
+    }
+
+    .scroll-indicator {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: 1;
+      transition: opacity 0.4s ease;
+    }
+
+    .scroll-indicator.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .scroll-line {
+      width: 1px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scroll-dot {
+      position: absolute;
+      top: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 2px;
+      animation: scrollDown 1.6s ease-in-out infinite;
+    }
+
+    @keyframes scrollDown {
+      0% {
+        top: -8px;
+        opacity: 1;
+      }
+
+      80% {
+        top: 40px;
+        opacity: 0;
+      }
+
+      100% {
+        top: -8px;
+        opacity: 0;
+      }
+    }
+
+    /* 6. Demo Grid Section */
+    #demo {
+      min-height: 80vh;
+      padding: 5rem 0;
+      position: relative;
+      background: var(--void);
+    }
+
+    .demo-inner {
+      text-align: center;
+    }
+
+    .section-eyebrow {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    .demo-instruction {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+
+    .birth-input-wrapper {
+      display: inline-block;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .birth-input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(1.5rem, 4vw, 3rem);
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      text-align: center;
+      width: 200px;
+      padding: 0.5rem 1rem;
+      outline: none;
+      -moz-appearance: textfield;
+      appearance: textfield;
+      transition: border-bottom-color 0.2s ease;
+    }
+
+    .birth-input:focus {
+      border-bottom-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .birth-input::-webkit-outer-spin-button,
+    .birth-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+    }
+
+    .birth-label {
+      display: block;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+
+    #demo-grid {
+      display: grid;
+      width: min(960px, 92vw);
+      margin: 2.5rem auto 0;
+      gap: 4px;
+      will-change: transform;
+    }
+
+    .life-unit {
+      aspect-ratio: 1;
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+      cursor: crosshair;
+      transition: transform 0.15s var(--ease-smooth), box-shadow 0.15s var(--ease-smooth);
+      will-change: transform;
+    }
+
+    .life-unit:hover {
+      transform: scale(1.08);
+      z-index: 2;
+    }
+
+    .life-unit.past {
+      background-color: var(--unit-past);
+    }
+
+    .life-unit.future {
+      background-color: var(--unit-future);
+    }
+
+    .life-unit.current {
+      background-color: var(--void);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5), 0 0 6px rgba(255, 255, 255, 0.1);
+    }
+
+    .fluid-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0;
+      margin: 2rem auto 0;
+      width: min(960px, 92vw);
+    }
+
+    .stat-item {
+      flex: 1;
+      text-align: center;
+      padding: 1rem 0;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .stat-item:last-child {
+      border-right: none;
+    }
+
+    .stat-number {
+      font-size: clamp(1.2rem, 3vw, 1.8rem);
+      font-weight: 300;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+      display: block;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      display: block;
+      margin-top: 0.25rem;
+    }
+
+    .emotional-line {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.22);
+      text-align: center;
+      font-style: italic;
+      margin-top: 1.5rem;
+      letter-spacing: 0.02em;
+    }
+
+    .physics-tooltip {
+      position: fixed;
+      background: rgba(12, 12, 12, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-secondary);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      padding: 6px 12px;
+      border-radius: 2px;
+      pointer-events: none;
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      white-space: nowrap;
+    }
+
+    /* 7. Chronometer */
+    #chronometer-section {
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 5rem clamp(1.5rem, 5vw, 4rem);
+      content-visibility: auto;
+    }
+
+    .chrono-eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .chrono-container {
+      background: rgba(12, 12, 12, 0.7);
+      backdrop-filter: blur(24px) saturate(150%);
+      -webkit-backdrop-filter: blur(24px) saturate(150%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      padding: clamp(1.5rem, 5vw, 3rem) clamp(1.5rem, 6vw, 4.5rem);
+      box-shadow: var(--shadow-lg);
+      position: relative;
+    }
+
+    .chrono-display {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .chrono-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+
+    .chrono-value {
+      font-size: clamp(2rem, 5vw, 4.5rem);
+      font-weight: 300;
+      letter-spacing: -0.05em;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+      line-height: 1.0;
+      min-width: 3ch;
+      text-align: right;
+    }
+
+    .chrono-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.25em;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      font-weight: 400;
+      min-width: 100px;
+      text-align: left;
+    }
+
+    #c-ms {
+      font-size: clamp(1.2rem, 3vw, 2.5rem);
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    .chrono-toggle {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .chrono-mode-btn {
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      cursor: crosshair;
+      transition: all 0.2s ease;
+    }
+
+    .chrono-mode-btn.active {
+      color: var(--text-primary);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+
+    .chrono-mode-btn:hover {
+      color: var(--text-primary);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .chrono-arrow {
+      color: rgba(255, 255, 255, 0.2);
+      font-size: 0.8rem;
+    }
+
+    .chrono-blur {
+      transition: filter 0.3s ease;
+    }
+
+    .chrono-blur.blurring {
+      filter: blur(8px);
+    }
+
+    /* 8. Bento Grid */
+    #features {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 5rem clamp(1.5rem, 5vw, 4rem);
+      content-visibility: auto;
+    }
+
+    .features-title {
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      font-weight: 300;
+      letter-spacing: -0.03em;
+      color: var(--text-primary);
+      margin-bottom: 3rem;
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .bento-row-2 {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .bento-row-3 {
+      margin-top: 12px;
+    }
+
+    .bento-card {
+      background: rgba(12, 12, 12, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 8px;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s ease, transform 0.2s var(--ease-smooth);
+    }
+
+    .bento-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .bento-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at top left, rgba(255, 255, 255, 0.03) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .bento-title {
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      color: var(--text-primary);
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    .bento-body {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    /* Theme card */
+    .theme-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 1rem;
+    }
+
+    .theme-pill {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      padding: 4px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      cursor: crosshair;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+    }
+
+    .theme-pill:hover,
+    .theme-pill.active {
+      color: var(--text-primary);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Granularity card */
+    .gran-pills {
+      display: flex;
+      gap: 8px;
+      margin: 1rem 0;
+    }
+
+    .gran-pill {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      padding: 5px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      cursor: crosshair;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+    }
+
+    .gran-pill.active {
+      color: var(--text-primary);
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .mini-grid-preview {
+      display: grid;
+      gap: 3px;
+      margin-top: 0.75rem;
+      width: 80px;
+    }
+
+    .mini-cell {
+      aspect-ratio: 1;
+      border-radius: 1px;
+      background: var(--unit-past);
+    }
+
+    .mini-cell.future-cell {
+      background: var(--unit-future);
+    }
+
+    /* Cascade */
+    .cascade-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-top: 0.75rem;
+    }
+
+    .cascade-item {
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      padding: 3px 0;
+      transition: color 0.2s ease;
+      cursor: default;
+    }
+
+    .cascade-item:hover {
+      color: var(--text-primary);
+    }
+
+    /* Card D — mini physics */
+    .mini-physics-wrapper {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin-top: 1rem;
+      border-radius: 2px;
+      overflow: hidden;
+      background: var(--void);
+    }
+
+    #mini-physics-cell {
+      background: var(--void) !important;
+    }
+
+    .mini-physics-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Shape toggle */
+    .shape-toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .shape-toggle-btn {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      cursor: crosshair;
+      transition: all 0.2s ease;
+    }
+
+    .shape-toggle-btn.active {
+      color: var(--text-primary);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .shape-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 4px;
+      margin-top: 0.75rem;
+      max-width: 200px;
+    }
+
+    .shape-cell {
+      aspect-ratio: 1;
+      background: rgba(255, 255, 255, 0.6);
+      transition: border-radius 0.4s var(--ease-smooth), background 0.2s ease;
+    }
+
+    .shape-cell.future-s {
+      background: var(--unit-future);
+    }
+
+    .shape-cell.past-s {
+      background: rgba(255, 255, 255, 0.75);
+    }
+
+    .shape-cell.current-s {
+      background: var(--void);
+      outline: 1px solid rgba(255, 255, 255, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 9. Weight Section */
+    #weight {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 8rem clamp(1.5rem, 5vw, 4rem);
+      text-align: center;
+      content-visibility: auto;
+    }
+
+    .stanza {
+      margin-bottom: 5rem;
+    }
+
+    .stanza-number {
+      font-size: clamp(4rem, 12vw, 9rem);
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.07);
+      letter-spacing: -0.04em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+    }
+
+    .stanza-text {
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+      font-style: italic;
+      margin-top: 0.5rem;
+    }
+
+    .weight-closing {
+      font-size: 1.15rem;
+      color: rgba(255, 255, 255, 0.65);
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      margin-top: 4rem;
+      line-height: 1.5;
+    }
+
+    /* 10. Technical */
+    #technical {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 5rem clamp(1.5rem, 5vw, 4rem);
+      content-visibility: auto;
+    }
+
+    .technical-cols {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3rem;
+      margin-top: 3rem;
+    }
+
+    .tech-stat {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 300;
+      color: var(--text-primary);
+      letter-spacing: -0.03em;
+    }
+
+    .tech-stat-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+
+    .tech-body {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-top: 0.5rem;
+    }
+
+    .section-hr {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.06);
+      border: none;
+      margin: 5rem 0;
+    }
+
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      font-weight: 300;
+      letter-spacing: -0.03em;
+      color: var(--text-primary);
+      margin-bottom: 0.75rem;
+    }
+
+    /* 11. Install */
+    #install {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 5rem clamp(1.5rem, 5vw, 4rem);
+      text-align: center;
+      content-visibility: auto;
+    }
+
+    .install-steps {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 1.5rem;
+      margin: 3rem 0;
+      flex-wrap: wrap;
+    }
+
+    .step {
+      flex: 1;
+      min-width: 140px;
+      max-width: 180px;
+      text-align: center;
+    }
+
+    .step-num {
+      font-size: 2rem;
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.15);
+      display: block;
+      margin-bottom: 0.5rem;
+      line-height: 1;
+    }
+
+    .step-text {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .step-arrow {
+      color: rgba(255, 255, 255, 0.18);
+      font-size: 1.2rem;
+      margin-top: 0.8rem;
+      align-self: flex-start;
+      padding-top: 0.5rem;
+    }
+
+    .btn-install-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--accent);
+      color: var(--text-inverse);
+      padding: 18px 40px;
+      border-radius: 2px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-decoration: none;
+      margin-top: 2rem;
+      transition: all 0.25s var(--ease-smooth);
+      box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+
+    .btn-install-primary:hover {
+      background: var(--accent-bright);
+      box-shadow: 0 0 40px rgba(255, 255, 255, 0.2), 0 0 80px rgba(255, 255, 255, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .btn-install-primary:active {
+      transform: translateY(0);
+      transition-duration: 0.08s;
+    }
+
+    .firefox-link {
+      display: block;
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      transition: color 0.2s ease;
+    }
+
+    .firefox-link:hover {
+      color: var(--text-primary);
+    }
+
+    /* 12. Donation */
+    #donation {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 5rem clamp(1.5rem, 5vw, 4rem);
+      text-align: center;
+      background: rgba(255, 255, 255, 0.015);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      content-visibility: auto;
+    }
+
+    #donation .section-eyebrow {
+      color: rgba(255, 255, 255, 0.28);
+      letter-spacing: 0.18em;
+    }
+
+    .donation-body {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.75;
+      max-width: 480px;
+      margin: 1.5rem auto;
+    }
+
+    .btn-donate {
+      display: inline-block;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--accent);
+      padding: 14px 32px;
+      border-radius: 2px;
+      font-size: 0.875rem;
+      letter-spacing: 0.08em;
+      cursor: crosshair;
+      transition: all 0.2s ease;
+      margin-top: 1.5rem;
+    }
+
+    .btn-donate:hover {
+      border-color: rgba(255, 255, 255, 0.5);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
+      color: var(--accent-bright);
+    }
+
+    .amount-pills {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .amount-pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+      padding: 5px 14px;
+      color: var(--text-secondary);
+      cursor: crosshair;
+      transition: all 0.2s ease;
+    }
+
+    .amount-pill:hover {
+      border-color: rgba(255, 255, 255, 0.25);
+      color: var(--text-primary);
+    }
+
+    .amount-pill:active {
+      transform: scale(0.96);
+    }
+
+    .trust-line {
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.18);
+      letter-spacing: 0.1em;
+      margin-top: 1.25rem;
+    }
+
+    /* 13. Footer */
+    #main-footer {
+      padding: 3rem clamp(1.5rem, 5vw, 4rem);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .footer-brand-text {
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.25em;
+      color: var(--text-secondary);
+    }
+
+    .footer-tagline {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.18);
+      margin-top: 0.4rem;
+    }
+
+    .footer-center {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.18);
+      font-style: italic;
+    }
+
+    .footer-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.5rem;
+    }
+
+    .footer-gh-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      transition: color 0.2s ease;
+    }
+
+    .footer-gh-link:hover {
+      color: var(--text-primary);
+    }
+
+    .footer-gh-link svg {
+      transition: transform 0.2s ease;
+    }
+
+    .footer-gh-link:hover svg {
+      transform: rotate(15deg);
+    }
+
+    .footer-micro {
+      text-align: center;
+      padding-top: 2rem;
+      font-size: 0.68rem;
+      color: rgba(255, 255, 255, 0.1);
+      letter-spacing: 0.1em;
+    }
+
+    /* 14. Keyframes */
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes drawLine {
+      from {
+        width: 0;
+      }
+
+      to {
+        width: 100%;
+      }
+    }
+
+    .revealed {
+      opacity: 1 !important;
+      transform: translateY(0) !important;
+    }
+
+    /* 14.1 Right-Side Scroll Navigation */
+    .right-scroll-nav {
+      position: fixed;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 997;
+    }
+
+    .right-scroll-pct {
+      position: fixed;
+      right: 14px;
+      top: calc(50% - 150px);
+      font-size: 0.42rem;
+      color: rgba(255, 255, 255, 0.18);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      writing-mode: vertical-rl;
+      z-index: 997;
+      pointer-events: none;
+    }
+
+    .scroll-dot-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .scroll-dot-link {
+      width: 4px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.12);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: block;
+      text-decoration: none;
+    }
+
+    .scroll-dot-link.active {
+      height: 12px;
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    .scroll-dot-label {
+      position: absolute;
+      right: 16px;
+      font-size: 0.55rem;
+      color: rgba(255, 255, 255, 0);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      transition: color 0.3s, transform 0.3s;
+      transform: translateX(4px);
+      pointer-events: none;
+    }
+
+    .scroll-dot-container:hover .scroll-dot-label {
+      color: rgba(255, 255, 255, 0.4);
+      transform: translateX(0);
+    }
+
+    /* 14.2 Floating Badge & Age Clock */
+    .floating-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      color: #888;
+      text-transform: uppercase;
+    }
+
+    .floating-badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.6), 0 0 20px rgba(34, 197, 94, 0.3);
+      animation: livePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes livePulse {
+
+      0%,
+      100% {
+        opacity: 0.6;
+        box-shadow: 0 0 6px rgba(34, 197, 94, 0.4), 0 0 14px rgba(34, 197, 94, 0.2);
+      }
+
+      50% {
+        opacity: 1;
+        box-shadow: 0 0 12px rgba(34, 197, 94, 0.8), 0 0 28px rgba(34, 197, 94, 0.4);
+      }
+    }
+
+    .age-clock {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .age-clock-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .year-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.15));
+      border-radius: 1px;
+      transition: width 0.5s linear;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.15), 0 0 16px rgba(255, 255, 255, 0.06);
+    }
+
+    @keyframes cursorBlink {
+
+      0%,
+      49% {
+        opacity: 1;
+      }
+
+      50%,
+      100% {
+        opacity: 0;
+      }
+    }
+
+    /* 14.3 Breathing Circle */
+    .breathing-circle {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.5s, background 0.5s, box-shadow 0.5s;
+      background: rgba(255, 255, 255, 0.02);
+      cursor: pointer;
+      outline: none;
+    }
+
+    .breathing-circle:hover {
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .breathing-circle.inhale {
+      transform: scale(1.5);
+      border-color: rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: 0 0 40px rgba(255, 255, 255, 0.08);
+      transition: transform 4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .breathing-circle.hold {
+      transform: scale(1.5);
+      border-color: rgba(255, 255, 255, 0.25);
+      transition: transform 0.3s;
+    }
+
+    .breathing-circle.exhale {
+      transform: scale(1);
+      border-color: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.02);
+      transition: transform 8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* 14.4 Milestone Timeline */
+    .milestone-timeline {
+      display: flex;
+      align-items: flex-start;
+      overflow-x: auto;
+      gap: 0;
+      padding: 1rem 0;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .milestone-timeline::-webkit-scrollbar {
+      display: none;
+    }
+
+    .milestone-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 70px;
+      flex: 1;
+    }
+
+    .milestone-line {
+      width: 100%;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+      position: absolute;
+      top: 4px;
+      left: 50%;
+    }
+
+    .milestone-item:last-child .milestone-line {
+      display: none;
+    }
+
+    .milestone-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+
+    .milestone-dot.past {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .milestone-dot.current {
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.5), 0 0 24px rgba(255, 255, 255, 0.2);
+      animation: pulse-current 2.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+    }
+
+    @keyframes pulse-current {
+
+      0%,
+      100% {
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.3), 0 0 16px rgba(255, 255, 255, 0.1);
+        transform: scale(1);
+      }
+
+      50% {
+        box-shadow: 0 0 16px rgba(255, 255, 255, 0.6), 0 0 32px rgba(255, 255, 255, 0.3);
+        transform: scale(1.3);
+      }
+    }
+
+    .section-heading-gradient {
+      background: linear-gradient(180deg, #ededed 0%, #888 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* 14.10 Copy Button SVG States */
+    .copy-btn-wrap {
+      position: relative;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      padding: 4px 10px;
+      cursor: crosshair;
+      transition: border-color 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    .copy-btn-wrap:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .copy-btn-wrap svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .copy-icon,
+    .check-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      transition: opacity 0.25s cubic-bezier(0.4, 0, 1, 1), transform 0.25s cubic-bezier(0.4, 0, 1, 1);
+    }
+
+    .check-icon {
+      opacity: 0;
+      transform: translateY(-50%) scale(0.6);
+    }
+
+    .copy-btn-wrap.success .copy-icon {
+      opacity: 0;
+      transform: translateY(-50%) scale(0.6);
+    }
+
+    .copy-btn-wrap.success .check-icon {
+      opacity: 1;
+      transform: translateY(-50%) scale(1);
+      transition: opacity 0.25s cubic-bezier(0, 0, 0.2, 1), transform 0.25s cubic-bezier(0, 0, 0.2, 1);
+    }
+
+    .copy-btn-wrap .copy-ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      pointer-events: none;
+      transform: scale(0);
+      animation: rippleOut 0.3s ease-out forwards;
+    }
+
+    @keyframes rippleOut {
+      to {
+        transform: scale(2.5);
+        opacity: 0;
+      }
+    }
+
+    .check-icon .checkpath {
+      stroke-dasharray: 20;
+      stroke-dashoffset: 20;
+      transition: stroke-dashoffset 0.35s ease-out 0.1s;
+    }
+
+    .copy-btn-wrap.success .check-icon .checkpath {
+      stroke-dashoffset: 0;
+    }
+
+    /* 14.11 Daily Distribution Visual Upgrade */
+    .daily-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 6px 0;
+      transition: opacity 0.3s;
+    }
+
+    .daily-bar-row:hover {
+      opacity: 1 !important;
+    }
+
+    .daily-bar-label {
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.45);
+      width: 100px;
+      text-align: right;
+      flex-shrink: 0;
+      letter-spacing: 0.03em;
+    }
+
+    .daily-bar-track {
+      flex: 1;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 5px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .daily-bar-fill {
+      height: 100%;
+      border-radius: 5px;
+      transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .daily-bar-fill::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 60%, rgba(255, 255, 255, 0.15));
+      border-radius: 5px;
+    }
+
+    .daily-bar-hours {
+      font-size: 0.68rem;
+      color: rgba(255, 255, 255, 0.3);
+      width: 40px;
+      font-variant-numeric: tabular-nums;
+      text-align: left;
+    }
+
+    /* 14.12 Hero Mouse-Reactive Particles */
+    .hero-particles {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .hero-particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 50%;
+      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.5s ease;
+    }
+
+    /* 14.13 Donation Psychology */
+    .donation-impact {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+      margin: 1.5rem auto;
+      max-width: 500px;
+    }
+
+    .donation-impact-item {
+      text-align: center;
+      flex: 1;
+      min-width: 100px;
+    }
+
+    .donation-impact-emoji {
+      font-size: 1.5rem;
+      margin-bottom: 4px;
+    }
+
+    .donation-impact-text {
+      font-size: 0.65rem;
+      color: #555;
+      line-height: 1.3;
+      letter-spacing: 0.02em;
+    }
+
+    /* 14.5 Comparison Stats & Life Equivalents */
+    .comparison-stats {
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+      margin: 2rem auto;
+      max-width: 600px;
+    }
+
+    /* 14.6 Quote System */
+    .quote-container {
+      position: relative;
+    }
+
+    @keyframes quoteFade {
+      0% {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      10% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      90% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+    }
+
+    /* 14.7 FAQ Accordion */
+    .faq-item-hover:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .faq-item-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+      opacity: 0;
+    }
+
+    .faq-item-answer.open {
+      max-height: 200px;
+      opacity: 1;
+    }
+
+    /* 14.8 Keyboard Shortcuts Modal */
+    .shortcuts-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .shortcuts-modal-overlay.active {
+      display: flex;
+    }
+
+    .shortcuts-modal {
+      background: rgba(12, 12, 12, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 2rem;
+      max-width: 400px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .shortcut-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 0.8rem;
+      color: #888;
+    }
+
+    .shortcut-key {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      padding: 2px 8px;
+      font-size: 0.7rem;
+      color: #ededed;
+      font-family: monospace;
+      letter-spacing: 0.05em;
+    }
+
+    /* 14.9 Section Entrance */
+    .section-entrance {
+      transition: opacity 0.6s var(--ease-smooth), transform 0.6s var(--ease-smooth);
+    }
+
+    /* 15. Media Queries */
+    @media (max-width: 768px) {
+      .nav-center {
+        display: none;
+      }
+
+      .btn-support {
+        display: none;
+      }
+
+      .bento-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .bento-row-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .technical-cols {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+
+      .install-steps {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .step-arrow {
+        display: none;
+      }
+
+      .footer-center {
+        display: none;
+      }
+
+      .footer-inner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .footer-right {
+        align-items: flex-start;
+      }
+
+      .hero-cta-row {
+        flex-direction: column;
+      }
+
+      .btn-primary,
+      .btn-ghost {
+        width: 100%;
+        text-align: center;
+      }
+
+      .amount-pills {
+        flex-direction: row;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+
+      .right-scroll-nav,
+      .right-scroll-pct {
+        display: none !important;
+      }
+
+      .milestone-timeline {
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding: 1rem;
+      }
+
+      .milestone-item {
+        min-width: 60px;
+      }
+
+      .comparison-stats {
+        gap: 1.5rem;
+      }
+
+      .age-clock {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .breathing-circle {
+        width: 100px;
+        height: 100px;
+      }
+
+      #btn-shortcuts {
+        display: none !important;
+      }
+
+      .btn-support {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+        width: 32px;
+        height: 32px;
+        font-size: 0;
+        border-radius: 2px;
+      }
+
+      .btn-support-text {
+        display: none;
+      }
+
+      .btn-chrome-nav {
+        display: inline-block !important;
+        font-size: 0.7rem;
+        padding: 6px 12px;
+      }
+
+      .donation-impact {
+        flex-direction: row;
+        gap: 1rem;
+      }
+
+      .donation-impact-item {
+        min-width: 80px;
+      }
+      
+      .support-text-hide {
+        display: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .chrono-value {
+        font-size: clamp(1.5rem, 8vw, 2.5rem);
+      }
+
+      .chrono-label {
+        min-width: 80px;
+        font-size: 0.6rem;
+      }
+
+      #donation {
+        border-left: none;
+        border-right: none;
+        max-width: 100%;
+      }
+    }
+
+    /* 16. Floating Pill Nav — Scrolled State */
+    #main-nav.scrolled {
+      top: 12px;
+      width: min(880px, 92vw);
+      height: 52px;
+      background: rgba(12, 12, 12, 0.85);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+      padding: 0 1.5rem;
+    }
+
+    #main-nav.scrolled .nav-center {
+      gap: 1.5rem;
+    }
+
+    #main-nav.scrolled .support-text-hide {
+      display: none;
+    }
+
+    .nav-link.active {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 4px 10px;
+      border-radius: 4px;
+      color: var(--text-primary);
+    }
+
+    /* 17. Session Timer */
+    .session-timer {
+      position: fixed;
+      top: 63px;
+      right: 0;
+      height: 14px;
+      display: flex;
+      justify-content: flex-end;
+      padding-right: clamp(1.5rem, 5vw, 4rem);
+      z-index: 998;
+      pointer-events: none;
+      font-size: 0.5rem;
+      color: rgba(255, 255, 255, 0.15);
+      letter-spacing: 0.1em;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+      transition: opacity 0.3s;
+    }
+
+    /* 18. Custom Cursor */
+    .custom-cursor {
+      position: fixed;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
+      pointer-events: none;
+      z-index: 99999;
+      transform: translate(-50%, -50%);
+      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+        height 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+        background 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+        border 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 0.15s ease;
+      will-change: transform;
+      mix-blend-mode: difference;
+      opacity: 0;
+      border: 0 solid transparent;
+    }
+
+    .custom-cursor.visible {
+      opacity: 1;
+    }
+
+    .custom-cursor.hovering {
+      width: 36px;
+      height: 36px;
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      mix-blend-mode: normal;
+    }
+
+    .custom-cursor.clicking {
+      width: 10px;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    @media (pointer: fine) {
+
+      *,
+      *::before,
+      *::after {
+        cursor: none !important;
+      }
+    }
+
+    @media (pointer: coarse) {
+      .custom-cursor {
+        display: none !important;
+      }
+    }
+
+    /* 19. Arc of Life */
+    .arc-container {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .arc-svg {
+      width: 100%;
+      height: auto;
+    }
+
+    .arc-labels {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 6% 0;
+      margin-top: -10px;
+    }
+
+    .arc-label {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .arc-label-text {
+      font-size: 0.6rem;
+      color: rgba(255, 255, 255, 0.15);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      transition: color 0.6s ease;
+    }
+
+    .arc-label-text.lit {
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .arc-label-text.current-label {
+      color: #ededed;
+      font-weight: 500;
+    }
+
+    .arc-label-age {
+      font-size: 0.5rem;
+      color: rgba(255, 255, 255, 0.08);
+      font-variant-numeric: tabular-nums;
+      transition: color 0.6s ease;
+    }
+
+    .arc-label-age.lit {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    @keyframes orbPulse {
+
+      0%,
+      100% {
+        filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.4)) drop-shadow(0 0 15px rgba(255, 255, 255, 0.15));
+      }
+
+      50% {
+        filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 30px rgba(255, 255, 255, 0.3));
+      }
+    }
+
+    @media (max-width: 768px) {
+      #main-nav.scrolled {
+        width: 95vw;
+        padding: 0 1rem;
+      }
+
+      .arc-labels {
+        padding: 0.5rem 2% 0;
+      }
+
+      .arc-label-text {
+        font-size: 0.45rem;
+      }
+
+      .arc-label-age {
+        font-size: 0.4rem;
+      }
+
+      .session-timer {
+        padding-right: 1rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .arc-label-text {
+        font-size: 0.38rem;
+        letter-spacing: 0.02em;
+      }
+
+      .arc-label-age {
+        display: none;
+      }
+    }
+
+    /* 20. Theme Circle-Reveal — covers the full bento card */
+    #theme-card {
+      /* position:relative and overflow:hidden already on .bento-card */
+      cursor: crosshair;
+    }
+
+    /* Content inside theme card must sit above the reveal layer */
+    #theme-card .bento-title,
+    #theme-card .bento-body,
+    #theme-card .theme-pills {
+      position: relative;
+      z-index: 2;
+    }
+
+    #theme-reveal-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      clip-path: circle(0% at 50% 50%);
+      /* No CSS transition — animated via rAF for 120fps */
+    }
+  </style>
+</head>
+
+<body>
+  <div class="custom-cursor" id="custom-cursor"></div>
+
+  <!-- SECTION 0: Nav -->
+  <nav id="main-nav">
+    <div class="nav-logo">
+      <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-label="Aevum logo">
+        <path d="M16 3L29 25H3L16 3Z" stroke="rgba(255,255,255,0.6)" stroke-width="1" fill="none" />
+        <path d="M16 25L3 25L9.5 14L22.5 14L29 25Z" fill="rgba(255,255,255,0.7)" stroke="none" />
+        <path d="M16 3L29 25H3L16 3Z" stroke="rgba(255,255,255,0.6)" stroke-width="1" fill="none" />
+      </svg>
+      <span class="nav-logo-text">AEVUM</span>
+    </div>
+    <nav class="nav-center" aria-label="Main navigation">
+      <a href="#demo" class="nav-link">How It Works</a>
+      <a href="#weight" class="nav-link">The Weight</a>
+      <a href="#install" class="nav-link">Install</a>
+    </nav>
+    <div class="nav-right">
+      <button id="btn-shortcuts"
+        style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:#888;width:32px;height:32px;border-radius:2px;display:inline-flex;align-items:center;justify-content:center;cursor:crosshair;transition:border-color 0.2s,color 0.2s;padding:0;flex-shrink:0;"
+        aria-label="Keyboard shortcuts"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+          <line x1="6" y1="8" x2="6" y2="8"></line>
+          <line x1="10" y1="8" x2="10" y2="8"></line>
+          <line x1="14" y1="8" x2="14" y2="8"></line>
+          <line x1="18" y1="8" x2="18" y2="8"></line>
+          <line x1="6" y1="12" x2="6" y2="12"></line>
+          <line x1="18" y1="12" x2="18" y2="12"></line>
+          <line x1="8" y1="16" x2="16" y2="16"></line>
+        </svg></button>
+      <a href="#donation" class="btn-support"><svg class="btn-support-icon" width="16" height="16" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+          aria-hidden="true">
+          <path
+            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+          </path>
+        </svg><span class="btn-support-text">Support <span class="support-text-hide">the Project</span></span></a>
+      <a href="https://chrome.google.com/webstore/detail/aevum/EXTENSION-ID-PLACEHOLDER" target="_blank"
+        rel="noopener noreferrer" class="btn-chrome-nav">Add to Chrome ↗</a>
+    </div>
+  </nav>
+  <div class="session-timer" id="session-timer">0:00 on this page</div>
+
+  <!-- Right-Side Scroll Navigation -->
+  <div class="right-scroll-pct" id="scroll-pct">0% explored</div>
+  <div class="right-scroll-nav" id="right-scroll-nav">
+    <div class="scroll-dot-container"><a href="#demo" title="Life Grid" class="scroll-dot-link"></a><span
+        class="scroll-dot-label">Life Grid</span></div>
+    <div class="scroll-dot-container"><a href="#chronometer-section" title="Chronometer"
+        class="scroll-dot-link"></a><span class="scroll-dot-label">Chronometer</span></div>
+    <div class="scroll-dot-container"><a href="#daily-distribution" title="Daily" class="scroll-dot-link"></a><span
+        class="scroll-dot-label">Daily</span></div>
+    <div class="scroll-dot-container"><a href="#features" title="Features" class="scroll-dot-link"></a><span
+        class="scroll-dot-label">Features</span></div>
+    <div class="scroll-dot-container"><a href="#weight" title="The Weight" class="scroll-dot-link"></a><span
+        class="scroll-dot-label">The Weight</span></div>
+    <div class="scroll-dot-container"><a href="#milestones" title="Milestones" class="scroll-dot-link"></a><span
+        class="scroll-dot-label">Milestones</span></div>
+    <div class="scroll-dot-container"><a href="#stats-section" title="Stats" class="scroll-dot-link"></a><span
+        class="scroll-dot-label">Stats</span></div>
+    <div class="scroll-dot-container"><a href="#life-equivalents" title="Equivalents" class="scroll-dot-link"></a><span
+        class="scroll-dot-label">Equivalents</span></div>
+    <div class="scroll-dot-container"><a href="#world-clock" title="Clocks" class="scroll-dot-link"></a><span
+        class="scroll-dot-label">Clocks</span></div>
+    <div class="scroll-dot-container"><a href="#testimonials" title="Words" class="scroll-dot-link"></a><span
+        class="scroll-dot-label">Words</span></div>
+    <div class="scroll-dot-container"><a href="#install" title="Install" class="scroll-dot-link"></a><span
+        class="scroll-dot-label">Install</span></div>
+    <div class="scroll-dot-container"><a href="#faq" title="FAQ" class="scroll-dot-link"></a><span
+        class="scroll-dot-label">FAQ</span></div>
+    <div class="scroll-dot-container"><a href="#donation" title="Support" class="scroll-dot-link"></a><span
+        class="scroll-dot-label">Support</span></div>
+  </div>
+
+  <!-- Keyboard Shortcuts Modal -->
+  <div class="shortcuts-modal-overlay" id="shortcuts-modal">
+    <div class="shortcuts-modal">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+        <p style="font-size:0.7rem;letter-spacing:0.25em;color:#888;text-transform:uppercase;">Keyboard Shortcuts</p>
+        <button id="close-shortcuts" style="color:#555;font-size:1.2rem;cursor:crosshair;background:none;border:none;"
+          aria-label="Close">✕</button>
+      </div>
+      <div class="shortcut-row"><span>Scroll to next section</span><span class="shortcut-key">J</span></div>
+      <div class="shortcut-row"><span>Scroll to previous section</span><span class="shortcut-key">K</span></div>
+      <div class="shortcut-row"><span>Start breathing exercise</span><span class="shortcut-key">B</span></div>
+      <div class="shortcut-row"><span>Go to top</span><span class="shortcut-key">T</span></div>
+      <div class="shortcut-row"><span>Toggle chrono mode</span><span class="shortcut-key">M</span></div>
+      <div class="shortcut-row"><span>Show shortcuts</span><span class="shortcut-key">?</span></div>
+      <div class="shortcut-row"><span>Close modal</span><span class="shortcut-key">Esc</span></div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: Hero -->
+  <section id="hero" style="position:relative;overflow:hidden;">
+    <div class="hero-particles" id="hero-particles" aria-hidden="true"></div>
+    <div class="hero-content" style="position:relative;z-index:1;">
+      <p class="eyebrow">Your Life in Blocks</p>
+      <h1 class="hero-headline" id="hero-headline">
+        Time is not<br>
+        <span id="headline-word">running <span id="headline-out">out</span>.</span>
+      </h1>
+      <p class="hero-sub">4,160 weeks. 80 years. One extension that makes every new tab a reckoning.</p>
+      <div class="hero-cta-row">
+        <a href="https://chrome.google.com/webstore/detail/aevum/EXTENSION-ID-PLACEHOLDER" target="_blank"
+          rel="noopener noreferrer" class="btn-primary">Add to Chrome — Free</a>
+        <a href="https://github.com/imsovikde/Aevum" target="_blank" rel="noopener noreferrer" class="btn-ghost">View on
+          GitHub ↗</a>
+      </div>
+      <p class="social-proof">Open source <span>·</span> No tracking <span>·</span> No data collection <span>·</span>
+        100% offline</p>
+    </div>
+    <div class="scroll-indicator" id="scroll-indicator">
+      <div class="scroll-line">
+        <div class="scroll-dot"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: Demo Grid -->
+  <section id="demo">
+    <div class="demo-inner">
+      <p class="section-eyebrow" data-reveal>Your Life, Calculated Now</p>
+      <p class="demo-instruction" data-reveal data-reveal-delay="100">Enter your birth year to see your life rendered in
+        real time.</p>
+      <div class="birth-input-wrapper" data-reveal data-reveal-delay="200">
+        <input type="number" id="birthYearInput" placeholder="1995" min="1920" max="2020" class="birth-input"
+          aria-label="Birth year">
+        <span class="birth-label">BIRTH YEAR</span>
+      </div>
+      <div id="demo-grid" role="grid" aria-label="Life grid visualization"></div>
+      <div class="stats-bar" id="stats-bar" data-reveal data-reveal-delay="300">
+        <div class="stat-item">
+          <span class="stat-number" id="stat-lived" style="font-variant-numeric: tabular-nums;">—</span>
+          <span class="stat-label">Years Lived</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" id="stat-remaining" style="font-variant-numeric: tabular-nums;">—</span>
+          <span class="stat-label">Years Remaining</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" id="stat-pct" style="font-variant-numeric: tabular-nums;">—</span>
+          <span class="stat-label">Life Elapsed</span>
+        </div>
+      </div>
+      <!-- Life Data Stats -->
+      <div id="life-data-bar" data-reveal data-reveal-delay="400"
+        style="margin-top:2.5rem;display:flex;gap:24px;justify-content:center;flex-wrap:wrap;font-size:0.9rem;color:#888;font-variant-numeric:tabular-nums;padding:0 1.5rem;">
+        <span><span style="font-weight:300;color:#ededed" id="ld-years">—</span> years lived</span>
+        <span style="color:#333">|</span>
+        <span><span style="font-weight:300;color:#ededed" id="ld-remaining">—</span> years remaining</span>
+        <span style="color:#333">|</span>
+        <span><span style="font-weight:300;color:#ededed" id="ld-weeks">—</span> weeks lived</span>
+        <span style="color:#333">|</span>
+        <span><span style="font-weight:300;color:#ededed" id="ld-pct">—</span>% of life elapsed</span>
+      </div>
+      <!-- Typing Effect Emotional Line -->
+      <p id="typing-line" data-reveal data-reveal-delay="500"
+        style="margin-top:1.5rem;font-size:0.85rem;color:#444;font-style:italic;text-align:center;padding:0 2rem;max-width:600px;margin-left:auto;margin-right:auto;min-height:1.5em;">
+      </p>
+      <!-- Live Age Counter -->
+      <div id="live-age-section" data-reveal data-reveal-delay="600"
+        style="margin-top:2rem;text-align:center;padding:0 1.5rem;">
+        <div class="floating-badge" style="margin:0 auto;width:fit-content"><span class="dot"></span><span>Live
+            Age</span></div>
+        <div class="age-clock" id="age-clock" style="margin-top:0.75rem;justify-content:center;flex-wrap:wrap;gap:8px">
+          <div class="age-clock-unit"><span id="ac-yrs"
+              style="font-size:1.6rem;font-weight:300;color:#ededed;line-height:1">—</span><span
+              style="font-size:0.55rem;color:#555;letter-spacing:0.12em;text-transform:uppercase">yrs</span></div>
+          <span style="color:#333;font-size:1.2rem;font-weight:200">·</span>
+          <div class="age-clock-unit"><span id="ac-days"
+              style="font-size:1.6rem;font-weight:300;color:#ededed;line-height:1">—</span><span
+              style="font-size:0.55rem;color:#555;letter-spacing:0.12em;text-transform:uppercase">days</span></div>
+          <span style="color:#333;font-size:1.2rem;font-weight:200">·</span>
+          <div class="age-clock-unit"><span id="ac-hrs"
+              style="font-size:1.6rem;font-weight:300;color:#ededed;line-height:1">—</span><span
+              style="font-size:0.55rem;color:#555;letter-spacing:0.12em;text-transform:uppercase">hrs</span></div>
+          <span style="color:#333;font-size:1.2rem;font-weight:200">·</span>
+          <div class="age-clock-unit"><span id="ac-min"
+              style="font-size:1.6rem;font-weight:300;color:#ededed;line-height:1">—</span><span
+              style="font-size:0.55rem;color:#555;letter-spacing:0.12em;text-transform:uppercase">min</span></div>
+          <span style="color:#333;font-size:1.2rem;font-weight:200">·</span>
+          <div class="age-clock-unit"><span id="ac-sec"
+              style="font-size:1.6rem;font-weight:300;color:#ededed;line-height:1">—</span><span
+              style="font-size:0.55rem;color:#555;letter-spacing:0.12em;text-transform:uppercase">sec</span></div>
+        </div>
+      </div>
+      <!-- Year Progress Bar -->
+      <div data-reveal data-reveal-delay="700" style="max-width:360px;margin:1.25rem auto 0;padding:0 1.5rem;">
+        <div
+          style="display:flex;justify-content:space-between;font-size:0.6rem;color:#555;margin-bottom:4px;letter-spacing:0.08em">
+          <span>LIFE PROGRESS</span><span id="year-pct" style="font-variant-numeric: tabular-nums;">—%</span></div>
+        <div style="height:2px;background:rgba(255,255,255,0.06);border-radius:1px;overflow:hidden">
+          <div class="year-progress-bar" id="year-bar" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="physics-tooltip" id="physics-tooltip">Each square is a week. Each week is gone before you notice it.</div>
+  </section>
+
+  <!-- SECTION 3: Chronometer -->
+  <section id="chronometer-section">
+    <p class="chrono-eyebrow" data-reveal>Time Remaining at 80 Year Expectancy</p>
+    <div class="chrono-container" data-reveal data-reveal-delay="100">
+      <div class="chrono-display chrono-blur" id="chrono-display">
+        <div class="chrono-row"><span class="chrono-value" id="c-years">——</span><span class="chrono-label">Years</span>
+        </div>
+        <div class="chrono-row"><span class="chrono-value" id="c-months">——</span><span
+            class="chrono-label">Months</span></div>
+        <div class="chrono-row"><span class="chrono-value" id="c-days">———</span><span class="chrono-label">Days</span>
+        </div>
+        <div class="chrono-row"><span class="chrono-value" id="c-hours">——</span><span class="chrono-label">Hours</span>
+        </div>
+        <div class="chrono-row"><span class="chrono-value" id="c-secs">——</span><span
+            class="chrono-label">Seconds</span></div>
+        <div class="chrono-row"><span class="chrono-value" id="c-ms">———</span><span
+            class="chrono-label">Milliseconds</span></div>
+      </div>
+      <div class="chrono-toggle" data-reveal data-reveal-delay="200">
+        <button class="chrono-mode-btn active" id="btn-countdown" aria-pressed="true">Countdown</button>
+        <span class="chrono-arrow">←→</span>
+        <button class="chrono-mode-btn" id="btn-age" aria-pressed="false">Age</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3.5: Daily Distribution (BLS ATUS Research Data) -->
+  <section id="daily-distribution" style="max-width:680px;margin:0 auto;padding:4rem 2rem;text-align:center;"
+    data-reveal>
+    <p style="font-size:0.7rem;letter-spacing:0.25em;color:#888;text-transform:uppercase;margin-bottom:0.5rem;"
+      data-reveal>HOW YOU SPEND 24 HOURS</p>
+    <p style="font-size:0.85rem;color:#444;font-weight:200;margin-bottom:2rem;" data-reveal data-reveal-delay="50">The
+      average human day, dissected.</p>
+    <div style="display:flex;flex-direction:column;gap:0;max-width:500px;margin:0 auto;" data-reveal
+      data-reveal-delay="100" id="daily-bars">
+      <div class="daily-bar-row"><span class="daily-bar-label">Work</span>
+        <div class="daily-bar-track">
+          <div class="daily-bar-fill"
+            style="width:0%;background:linear-gradient(90deg,rgba(220,100,100,0.6),rgba(220,100,100,0.3))"
+            data-target="36.67"></div>
+        </div><span class="daily-bar-hours">8.8h</span>
+      </div>
+      <div class="daily-bar-row"><span class="daily-bar-label">Sleep</span>
+        <div class="daily-bar-track">
+          <div class="daily-bar-fill"
+            style="width:0%;background:linear-gradient(90deg,rgba(100,120,200,0.6),rgba(100,120,200,0.3))"
+            data-target="31.25"></div>
+        </div><span class="daily-bar-hours">7.5h</span>
+      </div>
+      <div class="daily-bar-row"><span class="daily-bar-label">Screen time</span>
+        <div class="daily-bar-track">
+          <div class="daily-bar-fill"
+            style="width:0%;background:linear-gradient(90deg,rgba(100,200,140,0.6),rgba(100,200,140,0.3))"
+            data-target="16.67"></div>
+        </div><span class="daily-bar-hours">4.0h</span>
+      </div>
+      <div class="daily-bar-row"><span class="daily-bar-label">Free time</span>
+        <div class="daily-bar-track">
+          <div class="daily-bar-fill"
+            style="width:0%;background:linear-gradient(90deg,rgba(200,200,100,0.6),rgba(200,200,100,0.3))"
+            data-target="5.83"></div>
+        </div><span class="daily-bar-hours">1.4h</span>
+      </div>
+      <div class="daily-bar-row"><span class="daily-bar-label">Eating & cooking</span>
+        <div class="daily-bar-track">
+          <div class="daily-bar-fill"
+            style="width:0%;background:linear-gradient(90deg,rgba(200,170,100,0.6),rgba(200,170,100,0.3))"
+            data-target="4.58"></div>
+        </div><span class="daily-bar-hours">1.1h</span>
+      </div>
+      <div class="daily-bar-row"><span class="daily-bar-label">Commute</span>
+        <div class="daily-bar-track">
+          <div class="daily-bar-fill"
+            style="width:0%;background:linear-gradient(90deg,rgba(170,100,200,0.6),rgba(170,100,200,0.3))"
+            data-target="3.75"></div>
+        </div><span class="daily-bar-hours">0.9h</span>
+      </div>
+      <div class="daily-bar-row"><span class="daily-bar-label">Exercise</span>
+        <div class="daily-bar-track">
+          <div class="daily-bar-fill"
+            style="width:0%;background:linear-gradient(90deg,rgba(100,200,200,0.6),rgba(100,200,200,0.3))"
+            data-target="1.25"></div>
+        </div><span class="daily-bar-hours">0.3h</span>
+      </div>
+    </div>
+    <p style="font-size:0.65rem;color:rgba(255,255,255,0.12);margin-top:1.5rem;font-style:italic;" data-reveal
+      data-reveal-delay="200">Source: Bureau of Labor Statistics ATUS · Your day may differ — but probably not by much.
+    </p>
+  </section>
+
+  <!-- SECTION 3.6: Breathing Exercise (4-7-8 Technique) -->
+  <section id="breathing-section" style="max-width:680px;margin:0 auto;padding:4rem 2rem;text-align:center;"
+    data-reveal>
+    <p style="font-size:0.7rem;letter-spacing:0.25em;color:#888;text-transform:uppercase;margin-bottom:1.5rem;"
+      data-reveal>PAUSE</p>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:1.5rem;" data-reveal data-reveal-delay="100">
+      <div class="breathing-circle" id="breathing-circle" role="button" tabindex="0"
+        aria-label="Start breathing exercise">
+        <span id="breathing-text"
+          style="font-size:0.75rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;transition:color 0.3s">start</span>
+      </div>
+      <p style="font-size:0.8rem;color:#555;max-width:300px">Click the circle or press <strong
+          style="color:#888">B</strong> to begin a 4-7-8 breathing exercise.</p>
+    </div>
+  </section>
+
+  <section id="features">
+    <h2 class="features-title" data-reveal>Built without compromise.</h2>
+    <div class="bento-grid">
+      <!-- Card A: Themes -->
+      <div class="bento-card" id="theme-card" data-reveal>
+        <p class="bento-title">Seven Themes</p>
+        <p class="bento-body">Each atmosphere shifts the entire visual grammar of your new tab.</p>
+        <div class="theme-pills" id="theme-pills">
+          <button class="theme-pill active" data-theme="#070707,#ffffff,#888">Dark</button>
+          <button class="theme-pill" data-theme="#f5f0e8,#1a1a1a,#666">Ivory</button>
+          <button class="theme-pill" data-theme="#0d0d1a,#6b8aff,#4a5080">Midnight</button>
+          <button class="theme-pill" data-theme="#050f0d,#00ffcc,#007a60">Cyber</button>
+          <button class="theme-pill" data-theme="#030d03,#4caf50,#2d6e30">Forest</button>
+          <button class="theme-pill" data-theme="#120500,#ff6b35,#8a3a10">Sunset</button>
+          <button class="theme-pill" data-theme="#050505,#c8c8c8,#606060">Mono</button>
+        </div>
+      </div>
+      <!-- Card B: Granularity -->
+      <div class="bento-card" data-reveal data-reveal-delay="100">
+        <p class="bento-title">Three Granularities</p>
+        <p class="bento-body">Weeks show the velocity. Months show the rhythm. Years show the weight.</p>
+        <div class="gran-pills">
+          <button class="gran-pill" data-gran="weeks" aria-pressed="false">Weeks</button>
+          <button class="gran-pill active" data-gran="months" aria-pressed="true">Months</button>
+          <button class="gran-pill" data-gran="years" aria-pressed="false">Years</button>
+        </div>
+        <div id="mini-grid-preview" class="mini-grid-preview"></div>
+      </div>
+      <!-- Card C: Precision -->
+      <div class="bento-card" data-reveal data-reveal-delay="200">
+        <p class="bento-title">Millisecond Precision</p>
+        <p class="bento-body">Sub-day resolution. Toggle exactly how deep the clock goes.</p>
+        <div class="cascade-list">
+          <div class="cascade-item">Years</div>
+          <div class="cascade-item">Months</div>
+          <div class="cascade-item">Days</div>
+          <div class="cascade-item">Hours</div>
+          <div class="cascade-item">Minutes</div>
+          <div class="cascade-item">Seconds</div>
+          <div class="cascade-item">Milliseconds</div>
+        </div>
+      </div>
+    </div>
+    <div class="bento-row-2">
+      <!-- Card D: The Present Moment -->
+      <div class="bento-card" data-reveal>
+        <p class="bento-title">You Are Here</p>
+        <p class="bento-body" style="max-width:360px">That glowing square is not a pixel. It is you — right now, this second, irretrievably alive and burning through the only resource that cannot be earned back. Look at it.</p>
+        <div class="mini-physics-wrapper" id="mini-physics-wrapper">
+          <div class="life-unit current" id="mini-physics-cell"
+            style="width:100%;height:100%;border-radius:2px;background:var(--void);"></div>
+        </div>
+      </div>
+      <!-- Card E: Open Source -->
+      <div class="bento-card" data-reveal data-reveal-delay="100">
+        <p class="bento-title">Open Source Forever</p>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"
+          style="margin-bottom:0.75rem" aria-hidden="true">
+          <path
+            d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+        </svg>
+        <p class="bento-body">No corporation. No subscription. No hidden agenda. The code is yours.</p>
+        <a href="https://github.com/imsovikde/Aevum" target="_blank" rel="noopener noreferrer"
+          style="font-size:0.78rem;color:var(--text-secondary);display:inline-block;margin-top:0.75rem;transition:color 0.2s ease;letter-spacing:0.08em;"
+          onmouseover="this.style.color='#ededed'" onmouseout="this.style.color='#888'">View on GitHub ↗</a>
+      </div>
+    </div>
+    <div class="bento-row-3">
+      <!-- Card F: Shapes -->
+      <div class="bento-card" data-reveal>
+        <p class="bento-title" style="margin-bottom:0.5rem">Squares or Circles</p>
+        <p class="bento-body" style="margin-bottom:1rem">Rigid structure or organic flow. Your grid, your philosophy.
+        </p>
+        <div class="shape-toggle-row">
+          <button class="shape-toggle-btn active" id="btn-squares" aria-pressed="true">Squares</button>
+          <button class="shape-toggle-btn" id="btn-circles" aria-pressed="false">Circles</button>
+        </div>
+        <div class="shape-preview-grid" id="shape-preview-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4.5: Milestones Timeline -->
+  <section id="milestones" class="section-entrance"
+    style="max-width:960px;margin:0 auto;padding:5rem 2rem;overflow-x:hidden;" data-reveal>
+    <p style="font-size:0.7rem;letter-spacing:0.25em;color:#888;text-transform:uppercase;margin-bottom:0.75rem;text-align:center;"
+      data-reveal>THE ARC OF A LIFE</p>
+    <h2 class="section-heading-gradient"
+      style="font-size:clamp(1.8rem,4vw,3rem);font-weight:300;letter-spacing:-0.02em;margin-bottom:3rem;text-align:center;"
+      data-reveal data-reveal-delay="100">Your milestones.</h2>
+    <div class="arc-container" data-reveal data-reveal-delay="200" id="arc-container">
+      <svg class="arc-svg" viewBox="0 0 800 420" preserveAspectRatio="xMidYMid meet" id="arc-svg">
+        <defs>
+          <linearGradient id="arc-glow-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.5)" />
+            <stop offset="100%" stop-color="rgba(255,255,255,0.15)" />
+          </linearGradient>
+          <filter id="orb-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <path id="arc-base" d="M 60,380 A 340,340 0 0,1 740,380" fill="none" stroke="rgba(255,255,255,0.06)"
+          stroke-width="2" stroke-linecap="round" />
+        <path id="arc-progress" d="M 60,380 A 340,340 0 0,1 740,380" fill="none" stroke="url(#arc-glow-grad)"
+          stroke-width="2.5" stroke-linecap="round" stroke-dasharray="0" stroke-dashoffset="0" />
+        <g id="arc-milestone-dots"></g>
+        <circle id="arc-orb" cx="60" cy="380" r="6" fill="#fff" filter="url(#orb-glow)" opacity="0"
+          style="animation:orbPulse 2.5s ease-in-out infinite" />
+      </svg>
+      <div class="arc-labels" id="arc-labels"></div>
+    </div>
+    <p style="font-size:0.85rem;color:#555;text-align:center;margin-top:2rem;font-style:italic;" data-reveal
+      data-reveal-delay="300">You are here. Every milestone ahead is still yours to shape.</p>
+  </section>
+
+  <section id="weight">
+    <div class="stanza" data-reveal>
+      <div class="stanza-number">4,160</div>
+      <p class="stanza-text">weeks in an average life.</p>
+    </div>
+    <div class="stanza" data-reveal data-reveal-delay="100">
+      <div class="stanza-number">168</div>
+      <p class="stanza-text">hours in each one of them.</p>
+    </div>
+    <div class="stanza" data-reveal data-reveal-delay="200">
+      <div class="stanza-number" id="countdown-number">1</div>
+      <p class="stanza-text">right now, being consumed.</p>
+    </div>
+    <p class="weight-closing" data-reveal data-reveal-delay="300">Most people never look. Aevum makes you look every
+      time.</p>
+  </section>
+
+  <!-- SECTION 5.5: Life Stats (Research-backed) -->
+  <section id="stats-section" style="max-width:700px;margin:0 auto;padding:4rem 2rem;text-align:center;">
+    <p style="font-size:0.7rem;letter-spacing:0.25em;color:#888;text-transform:uppercase;margin-bottom:1.5rem;"
+      data-reveal>DEEP-DIVE LIFE FACTS</p>
+    <div class="comparison-stats" data-reveal data-reveal-delay="100">
+      <div style="text-align:center">
+        <div style="font-size:clamp(1.5rem,3vw,2.2rem);font-weight:200;color:#ededed;font-variant-numeric:tabular-nums"
+          id="stat-heartbeats">1,132,000,000</div>
+        <div style="font-size:0.65rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-top:4px">
+          heartbeats</div>
+        <div style="font-size:0.6rem;color:#333;margin-top:2px">avg 72 bpm</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:clamp(1.5rem,3vw,2.2rem);font-weight:200;color:#ededed;font-variant-numeric:tabular-nums"
+          id="stat-breaths">244,000,000</div>
+        <div style="font-size:0.65rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-top:4px">breaths
+          taken</div>
+        <div style="font-size:0.6rem;color:#333;margin-top:2px">avg 15/min</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:clamp(1.5rem,3vw,2.2rem);font-weight:200;color:#ededed;font-variant-numeric:tabular-nums"
+          id="stat-sunrises">11,315</div>
+        <div style="font-size:0.65rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin-top:4px">sunrises
+          witnessed</div>
+        <div style="font-size:0.6rem;color:#333;margin-top:2px">one per day</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 6: Technical -->
+  <section id="technical">
+    <hr class="section-hr">
+    <p class="section-eyebrow" data-reveal>Under the Hood</p>
+    <h2 class="section-title" data-reveal data-reveal-delay="100">Radical simplicity.</h2>
+    <div class="technical-cols">
+      <div data-reveal>
+        <span class="tech-stat-label">Total Size</span>
+        <div class="tech-stat">~24KB</div>
+        <p class="tech-body">No bloat. No React. No dependencies. Vanilla HTML, CSS, and TypeScript compiled to plain
+          JavaScript.</p>
+      </div>
+      <div data-reveal data-reveal-delay="100">
+        <span class="tech-stat-label">Only Permission</span>
+        <div class="tech-stat">storage</div>
+        <p class="tech-body">It stores your date of birth and preferences locally, on your machine. Nothing leaves your
+          device. There are no servers. There is no company watching.</p>
+      </div>
+      <div data-reveal data-reveal-delay="200">
+        <span class="tech-stat-label">Live Counter</span>
+        <div class="tech-stat">60fps</div>
+        <p class="tech-body">The chronometer updates every 16ms. Not because you need precision — but because you deserve to feel how fast it moves.</p>
+      </div>
+    </div>
+    <hr class="section-hr">
+  </section>
+
+  <!-- SECTION 6.5: Life Equivalents -->
+  <section id="life-equivalents" style="max-width:800px;margin:0 auto;padding:5rem 2rem;text-align:center;">
+    <p style="font-size:0.7rem;letter-spacing:0.25em;color:#888;text-transform:uppercase;margin-bottom:0.75rem;"
+      data-reveal>YOUR LIFE IN CONTEXT</p>
+    <h2 class="section-heading-gradient"
+      style="font-size:clamp(1.8rem,4vw,3rem);font-weight:300;letter-spacing:-0.02em;margin-bottom:3rem;" data-reveal
+      data-reveal-delay="100">Where does it all go?</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;" data-reveal
+      data-reveal-delay="200">
+      <div
+        style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:1.5rem;text-align:center;transition:border-color 0.2s"
+        onmouseover="this.style.borderColor='rgba(255,255,255,0.15)'"
+        onmouseout="this.style.borderColor='rgba(255,255,255,0.06)'">
+        <div style="font-size:1.8rem;margin-bottom:0.5rem">😴</div>
+        <div style="font-size:1.2rem;font-weight:200;color:#ededed">~10.3 years</div>
+        <div style="font-size:0.7rem;color:#555;margin-top:4px">Sleeping</div>
+        <div style="font-size:0.6rem;color:#333;margin-top:2px">one-third of your life</div>
+      </div>
+      <div
+        style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:1.5rem;text-align:center;transition:border-color 0.2s"
+        onmouseover="this.style.borderColor='rgba(255,255,255,0.15)'"
+        onmouseout="this.style.borderColor='rgba(255,255,255,0.06)'">
+        <div style="font-size:1.8rem;margin-bottom:0.5rem">🍽️</div>
+        <div style="font-size:1.2rem;font-weight:200;color:#ededed">~3.66 years</div>
+        <div style="font-size:0.7rem;color:#555;margin-top:4px">Eating</div>
+        <div style="font-size:0.6rem;color:#333;margin-top:2px">~1.15 hours per day</div>
+      </div>
+      <div
+        style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:1.5rem;text-align:center;transition:border-color 0.2s"
+        onmouseover="this.style.borderColor='rgba(255,255,255,0.15)'"
+        onmouseout="this.style.borderColor='rgba(255,255,255,0.06)'">
+        <div style="font-size:1.8rem;margin-bottom:0.5rem">📱</div>
+        <div style="font-size:1.2rem;font-weight:200;color:#ededed">~6.8 years</div>
+        <div style="font-size:0.7rem;color:#555;margin-top:4px">Screen time</div>
+        <div style="font-size:0.6rem;color:#333;margin-top:2px">avg 5.4h/day (eMarketer)</div>
+      </div>
+      <div
+        style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:1.5rem;text-align:center;transition:border-color 0.2s"
+        onmouseover="this.style.borderColor='rgba(255,255,255,0.15)'"
+        onmouseout="this.style.borderColor='rgba(255,255,255,0.06)'">
+        <div style="font-size:1.8rem;margin-bottom:0.5rem">🚶</div>
+        <div style="font-size:1.2rem;font-weight:200;color:#ededed">~110,000 km</div>
+        <div style="font-size:0.7rem;color:#555;margin-top:4px">Walking</div>
+        <div style="font-size:0.6rem;color:#333;margin-top:2px">avg 7,500 steps/day</div>
+      </div>
+      <div
+        style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:1.5rem;text-align:center;transition:border-color 0.2s"
+        onmouseover="this.style.borderColor='rgba(255,255,255,0.15)'"
+        onmouseout="this.style.borderColor='rgba(255,255,255,0.06)'">
+        <div style="font-size:1.8rem;margin-bottom:0.5rem">📖</div>
+        <div style="font-size:1.2rem;font-weight:200;color:#ededed">~0.7 years</div>
+        <div style="font-size:0.7rem;color:#555;margin-top:4px">Reading</div>
+        <div style="font-size:0.6rem;color:#333;margin-top:2px">if 30 min/day</div>
+      </div>
+      <div
+        style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:1.5rem;text-align:center;transition:border-color 0.2s"
+        onmouseover="this.style.borderColor='rgba(255,255,255,0.15)'"
+        onmouseout="this.style.borderColor='rgba(255,255,255,0.06)'">
+        <div style="font-size:1.8rem;margin-bottom:0.5rem">❤️</div>
+        <div style="font-size:1.2rem;font-weight:200;color:#ededed">~3.5 years</div>
+        <div style="font-size:0.7rem;color:#555;margin-top:4px">In love</div>
+        <div style="font-size:0.6rem;color:#333;margin-top:2px">avg relationship time</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 6.6: World Clock -->
+  <section id="world-clock" style="max-width:800px;margin:0 auto;padding:4rem 2rem;text-align:center;">
+    <p style="font-size:0.7rem;letter-spacing:0.25em;color:#888;text-transform:uppercase;margin-bottom:1.5rem;"
+      data-reveal>TIME EVERYWHERE</p>
+    <div id="world-clock-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;"
+      data-reveal data-reveal-delay="100"></div>
+  </section>
+
+  <!-- SECTION 6.7: Quotes on Time & Life -->
+  <section id="testimonials" style="max-width:700px;margin:0 auto;padding:5rem 2rem;text-align:center;">
+    <p style="font-size:0.7rem;letter-spacing:0.25em;color:#888;text-transform:uppercase;margin-bottom:2rem;"
+      data-reveal>ON TIME & LIFE</p>
+    <div class="quote-container" data-reveal data-reveal-delay="100">
+      <blockquote id="quote-text"
+        style="font-size:clamp(1.2rem,3vw,1.8rem);font-weight:200;color:#ededed;line-height:1.5;font-style:italic;margin:0;min-height:4em;transition:opacity 0.5s;">
+      </blockquote>
+      <p id="quote-author"
+        style="font-size:0.75rem;color:#555;margin-top:1.5rem;letter-spacing:0.1em;text-transform:uppercase;transition:opacity 0.5s;">
+      </p>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:1rem;margin-top:2rem;" data-reveal
+      data-reveal-delay="200">
+      <div id="quote-dots" style="display:flex;gap:6px;"></div>
+      <button id="quote-copy" class="copy-btn-wrap" aria-label="Copy quote"
+        style="color:#888;font-size:0.65rem;letter-spacing:0.08em;text-transform:uppercase;position:relative;">
+        <svg class="copy-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+        <svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" stroke-width="2" />
+          <path class="checkpath" d="M8 12l3 3 5-5" fill="none" />
+        </svg>
+        <span style="margin-left:16px;">Copy</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- SECTION 7: Install -->
+  <section id="install">
+    <p class="section-eyebrow" data-reveal>Get Aevum</p>
+    <h2 class="section-title" data-reveal data-reveal-delay="100">Installed in 10 seconds.</h2>
+    <div class="install-steps">
+      <div class="step" data-reveal>
+        <span class="step-num">1</span>
+        <p class="step-text">Click the button below.</p>
+      </div>
+      <div class="step-arrow" data-reveal data-reveal-delay="50">→</div>
+      <div class="step" data-reveal data-reveal-delay="100">
+        <span class="step-num">2</span>
+        <p class="step-text">Chrome opens the extension page. Click Add.</p>
+      </div>
+      <div class="step-arrow" data-reveal data-reveal-delay="150">→</div>
+      <div class="step" data-reveal data-reveal-delay="200">
+        <span class="step-num">3</span>
+        <p class="step-text">Every new tab becomes your reckoning.</p>
+      </div>
+    </div>
+    <a href="https://chrome.google.com/webstore/detail/aevum/EXTENSION-ID-PLACEHOLDER" target="_blank"
+      rel="noopener noreferrer" class="btn-install-primary" data-reveal data-reveal-delay="300">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+          d="M0.86 7.047a6.187 6.187 0 1 0 12.374 0 6.187 6.187 0 1 0 -12.374 0" stroke-width="1" />
+        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M7.04688 4.61523h5.69152"
+          stroke-width="1" />
+        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+          d="M4.615 7.046a2.431 2.431 0 1 0 4.862 0 2.431 2.431 0 1 0 -4.862 0" stroke-width="1" />
+        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M4.933 8.26423 2.08722 3.33521"
+          stroke-width="1" />
+        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M9.1479 8.25854 6.30212 13.1876"
+          stroke-width="1" />
+      </svg>
+      Add Aevum to Chrome — Free
+    </a>
+    <a href="https://addons.mozilla.org/en-US/firefox/addon/aevum/" target="_blank" rel="noopener noreferrer"
+      class="firefox-link">Also available for Firefox →</a>
+  </section>
+
+  <!-- SECTION 7.5: FAQ -->
+  <section id="faq" style="max-width:640px;margin:0 auto;padding:5rem 2rem;">
+    <p style="font-size:0.7rem;letter-spacing:0.25em;color:#888;text-transform:uppercase;margin-bottom:0.75rem;text-align:center;"
+      data-reveal>QUESTIONS</p>
+    <h2 class="section-heading-gradient"
+      style="font-size:clamp(1.4rem,3vw,2rem);font-weight:300;letter-spacing:-0.02em;margin-bottom:2.5rem;text-align:center;"
+      data-reveal data-reveal-delay="100">Frequently asked.</h2>
+    <div id="faq-list" data-reveal data-reveal-delay="200">
+      <div class="faq-item-hover" style="border-bottom:1px solid rgba(255,255,255,0.04);padding:1rem 0;cursor:pointer;"
+        onclick="this.querySelector('.faq-item-answer').classList.toggle('open');let i=this.querySelector('.faq-icon');i.textContent=i.textContent==='+'?'−':'+'">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <p style="font-size:0.9rem;color:#ccc;font-weight:300">What data does Aevum collect?</p><span class="faq-icon"
+            style="color:#555;font-size:1.2rem;transition:transform 0.3s">+</span>
+        </div>
+        <div class="faq-item-answer">
+          <p style="font-size:0.8rem;color:#555;padding-top:0.75rem;line-height:1.6">None. Aevum stores your date of
+            birth locally in your browser's storage. No analytics. No tracking. No servers. The code is fully open
+            source for you to verify.</p>
+        </div>
+      </div>
+      <div class="faq-item-hover" style="border-bottom:1px solid rgba(255,255,255,0.04);padding:1rem 0;cursor:pointer;"
+        onclick="this.querySelector('.faq-item-answer').classList.toggle('open');let i=this.querySelector('.faq-icon');i.textContent=i.textContent==='+'?'−':'+'">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <p style="font-size:0.9rem;color:#ccc;font-weight:300">Is it really free?</p><span class="faq-icon"
+            style="color:#555;font-size:1.2rem;transition:transform 0.3s">+</span>
+        </div>
+        <div class="faq-item-answer">
+          <p style="font-size:0.8rem;color:#555;padding-top:0.75rem;line-height:1.6">Completely free. No premium tier,
+            no subscription, no upsells. If you want to support the project, you can buy a coffee — but it's entirely
+            optional.</p>
+        </div>
+      </div>
+      <div class="faq-item-hover" style="border-bottom:1px solid rgba(255,255,255,0.04);padding:1rem 0;cursor:pointer;"
+        onclick="this.querySelector('.faq-item-answer').classList.toggle('open');let i=this.querySelector('.faq-icon');i.textContent=i.textContent==='+'?'−':'+'">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <p style="font-size:0.9rem;color:#ccc;font-weight:300">Why does the extension need the "storage" permission?
+          </p><span class="faq-icon" style="color:#555;font-size:1.2rem;transition:transform 0.3s">+</span>
+        </div>
+        <div class="faq-item-answer">
+          <p style="font-size:0.8rem;color:#555;padding-top:0.75rem;line-height:1.6">To save your date of birth and
+            theme preferences locally. That's the only permission. No network requests, no remote servers, no data
+            leaves your machine.</p>
+        </div>
+      </div>
+      <div class="faq-item-hover" style="border-bottom:1px solid rgba(255,255,255,0.04);padding:1rem 0;cursor:pointer;"
+        onclick="this.querySelector('.faq-item-answer').classList.toggle('open');let i=this.querySelector('.faq-icon');i.textContent=i.textContent==='+'?'−':'+'">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <p style="font-size:0.9rem;color:#ccc;font-weight:300">Can I customize the life expectancy?</p><span
+            class="faq-icon" style="color:#555;font-size:1.2rem;transition:transform 0.3s">+</span>
+        </div>
+        <div class="faq-item-answer">
+          <p style="font-size:0.8rem;color:#555;padding-top:0.75rem;line-height:1.6">The default is 80 years (global
+            average). You can change it in settings. The grid adapts instantly.</p>
+        </div>
+      </div>
+      <div class="faq-item-hover" style="border-bottom:1px solid rgba(255,255,255,0.04);padding:1rem 0;cursor:pointer;"
+        onclick="this.querySelector('.faq-item-answer').classList.toggle('open');let i=this.querySelector('.faq-icon');i.textContent=i.textContent==='+'?'−':'+'">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <p style="font-size:0.9rem;color:#ccc;font-weight:300">Does it affect browser performance?</p><span
+            class="faq-icon" style="color:#555;font-size:1.2rem;transition:transform 0.3s">+</span>
+        </div>
+        <div class="faq-item-answer">
+          <p style="font-size:0.8rem;color:#555;padding-top:0.75rem;line-height:1.6">Aevum is ~24KB total. The physics
+            engine runs at 60fps only when visible. It has zero impact on your browsing experience.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 8: Donation -->
+  <section id="donation">
+    <p class="section-eyebrow" data-reveal>If Aevum Changed Something in You</p>
+    <h2 class="section-title" data-reveal data-reveal-delay="100">Keep it alive.</h2>
+    <p class="donation-body" data-reveal data-reveal-delay="200">
+      Aevum is free and always will be. There is no company behind it.
+      There is no monetization plan. It is one person building a tool
+      they wanted to exist.<br><br>
+      If looking at your life grid made you close a useless tab,
+      start something you've been postponing, or simply breathe differently
+      for a moment — consider leaving the cost of a coffee.
+      It keeps the server running and the code maintained.
+    </p>
+    <div class="donation-impact" data-reveal data-reveal-delay="250">
+      <div class="donation-impact-item">
+        <div class="donation-impact-emoji">☕</div>
+        <div class="donation-impact-text">$2 keeps<br>the extension alive<br>for a week</div>
+      </div>
+      <div class="donation-impact-item">
+        <div class="donation-impact-emoji">🔧</div>
+        <div class="donation-impact-text">$5 funds<br>one feature<br>update</div>
+      </div>
+      <div class="donation-impact-item">
+        <div class="donation-impact-emoji">🌍</div>
+        <div class="donation-impact-text">$10 supports<br>one month of<br>open source</div>
+      </div>
+    </div>
+    <a href="https://buymeacoffee.com/souvikdey" target="_blank" rel="noopener noreferrer" class="btn-donate" data-reveal
+      data-reveal-delay="300">Support with a coffee ☕</a>
+    <div class="amount-pills" data-reveal data-reveal-delay="400">
+      <a href="https://buymeacoffee.com/souvikdey" target="_blank" rel="noopener noreferrer" class="amount-pill">$2</a>
+      <a href="https://buymeacoffee.com/souvikdey" target="_blank" rel="noopener noreferrer" class="amount-pill">$5</a>
+      <a href="https://buymeacoffee.com/souvikdey" target="_blank" rel="noopener noreferrer" class="amount-pill">$10</a>
+    </div>
+    <p class="trust-line" data-reveal data-reveal-delay="500">You are never obligated. Aevum will never ask twice.</p>
+  </section>
+
+  <!-- SECTION 9: Footer -->
+  <footer id="main-footer">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-brand">
+          <svg width="20" height="20" viewBox="0 0 32 32" fill="none" aria-label="Aevum" role="img">
+            <path d="M16 3L29 25H3L16 3Z" stroke="rgba(255,255,255,0.4)" stroke-width="1" fill="none" />
+            <path d="M16 25L3 25L9.5 14L22.5 14L29 25Z" fill="rgba(255,255,255,0.5)" />
+          </svg>
+          <span class="footer-brand-text">AEVUM</span>
+        </div>
+        <p class="footer-tagline">Open source. No tracking. Made with urgency.</p>
+      </div>
+      <div class="footer-center">
+        <p>"The code is open. The time is not."</p>
+      </div>
+      <div class="footer-right">
+        <a href="https://github.com/imsovikde/Aevum" target="_blank" rel="noopener noreferrer" class="footer-gh-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            aria-hidden="true">
+            <path
+              d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+          </svg>
+          View Source ↗
+        </a>
+      </div>
+    </div>
+    <div class="footer-micro">NO PRIVACY POLICY · NO TERMS &amp; CONDITIONS · NO DATA COLLECTED · EVER</div>
+    <div
+      style="text-align:center;padding:1rem 0 0.5rem;display:flex;justify-content:center;gap:2rem;flex-wrap:wrap;font-size:0.65rem;color:#333;letter-spacing:0.08em;">
+      <span>NOW <span id="footer-time" style="color:#555;font-variant-numeric:tabular-nums">--:--:--</span></span>
+      <span>NEXT YEAR IN <span id="footer-countdown"
+          style="color:#555;font-variant-numeric:tabular-nums">---</span></span>
+    </div>
+  </footer>
+
+  <script>
+    // ─── FluidSimulation Class (ported exactly from script.js) ──────────────────
+    const FLUID_COLS = 64;
+    const PROPAGATION = 0.45;
+    const DAMPING = 0.995;
+    const MOUSE_MOVE_STRENGTH = 2.5;
+    const MOUSE_DRAG_STRENGTH = 4.0;
+    const CLICK_SPLASH_FORCE = 0.18;
+    const TILT_STRENGTH = 0.006;
+    const AMBIENT_SPEED = 1.8;
+    const AMBIENT_AMP = 0.012;
+
+    class FluidSimulation {
+      constructor(el) {
+        this.progress = 0;
+        this.mouseX = -1;
+        this.mouseY = -1;
+        this.prevMouseX = -1;
+        this.prevMouseY = -1;
+        this.mouseInside = false;
+        this.mouseDown = false;
+        this.tiltX = 0;
+        this.tiltY = 0;
+        this.animTime = 0;
+        this.waterColor = '#ffffff';
+        this.waterColorHL = 'rgba(255,255,255,0.3)';
+        this.bgColor = '#1a1a1a';
+        this.w = 0;
+        this.h = 0;
+        this.el = el;
+        this.heights = new Float32Array(FLUID_COLS);
+        this.velocities = new Float32Array(FLUID_COLS);
+        // Create canvas inside the element — pointer-events none so parent div handles mouse
+        this.canvas = document.createElement('canvas');
+        this.canvas.className = 'fluid-canvas';
+        this.canvas.style.pointerEvents = 'none';
+        this.canvas.setAttribute('aria-hidden', 'true');
+        el.appendChild(this.canvas);
+        this.ctx = this.canvas.getContext('2d');
+        this.resize();
+        this.readColors();
+        // Bind event listeners to the PARENT ELEMENT (not the canvas)
+        this.boundMouseMove = this._onMouseMove.bind(this);
+        this.boundMouseLeave = this._onMouseLeave.bind(this);
+        this.boundMouseDown = this._onMouseDown.bind(this);
+        this.boundMouseUp = this._onMouseUp.bind(this);
+        this.boundTouchMove = this._onTouchMove.bind(this);
+        this.boundTouchStart = this._onTouchStart.bind(this);
+        this.boundDeviceOrientation = this._onDeviceOrientation.bind(this);
+        el.addEventListener('mousemove', this.boundMouseMove);
+        el.addEventListener('mouseleave', this.boundMouseLeave);
+        el.addEventListener('mousedown', this.boundMouseDown);
+        el.addEventListener('touchmove', this.boundTouchMove, { passive: false });
+        el.addEventListener('touchstart', this.boundTouchStart);
+        window.addEventListener('mouseup', this.boundMouseUp);
+        window.addEventListener('deviceorientation', this.boundDeviceOrientation);
+      }
+      resize() {
+        const rect = this.el.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        this.w = Math.max(1, Math.round(rect.width * dpr));
+        this.h = Math.max(1, Math.round(rect.height * dpr));
+        this.canvas.width = this.w;
+        this.canvas.height = this.h;
+        this.canvas.style.width = rect.width + 'px';
+        this.canvas.style.height = rect.height + 'px';
+      }
+      readColors() {
+        const style = getComputedStyle(this.el);
+        this.waterColor = style.getPropertyValue('--box-past-base').trim() || '#ffffff';
+        this.bgColor = style.getPropertyValue('--box-future').trim() || '#1a1a1a';
+        this.waterColorHL = this._makeHighlight(this.waterColor);
+      }
+      _makeHighlight(color) {
+        const c = document.createElement('canvas');
+        c.width = 1; c.height = 1;
+        const cx = c.getContext('2d');
+        cx.fillStyle = color;
+        cx.fillRect(0, 0, 1, 1);
+        const d = cx.getImageData(0, 0, 1, 1).data;
+        const r = Math.min(255, d[0] + 60);
+        const g = Math.min(255, d[1] + 60);
+        const b = Math.min(255, d[2] + 60);
+        return `rgba(${r},${g},${b},0.45)`;
+      }
+      setProgress(p) {
+        this.progress = Math.max(0, Math.min(1, p));
+      }
+      _isInsideShape(nx, ny) {
+        return nx >= 0 && nx <= 1 && ny >= 0 && ny <= 1;
+      }
+      _getNormalized(e) {
+        const rect = this.el.getBoundingClientRect();
+        return {
+          nx: (e.clientX - rect.left) / rect.width,
+          ny: (e.clientY - rect.top) / rect.height
+        };
+      }
+      _onMouseMove(e) {
+        const { nx, ny } = this._getNormalized(e);
+        if (!this._isInsideShape(nx, ny)) {
+          this.mouseInside = false;
+          this.mouseX = -1;
+          this.mouseY = -1;
+          return;
+        }
+        const surfaceNY = 1 - this.progress;
+        const inWater = ny >= (surfaceNY - 0.10);
+        this.prevMouseX = this.mouseX;
+        this.prevMouseY = this.mouseY;
+        this.mouseX = nx;
+        this.mouseY = ny;
+        this.mouseInside = inWater;
+      }
+      _onMouseDown(e) {
+        this.mouseDown = true;
+        const { nx, ny } = this._getNormalized(e);
+        if (!this._isInsideShape(nx, ny)) return;
+        const surfaceNY = 1 - this.progress;
+        if (ny < (surfaceNY - 0.10)) return;
+        const col = Math.floor(nx * (FLUID_COLS - 1));
+        const splashForce = CLICK_SPLASH_FORCE * this.h;
+        for (let k = -5; k <= 5; k++) {
+          const ci = col + k;
+          if (ci >= 0 && ci < FLUID_COLS) {
+            const falloff = Math.exp(-(k * k) / 4.0);
+            this.heights[ci] -= splashForce * falloff;
+          }
+        }
+      }
+      _onMouseUp() { this.mouseDown = false; }
+      _onMouseLeave() {
+        this.mouseInside = false;
+        this.mouseDown = false;
+        this.mouseX = -1;
+        this.mouseY = -1;
+        this.prevMouseX = -1;
+        this.prevMouseY = -1;
+      }
+      _onTouchMove(e) {
+        e.preventDefault();
+        const rect = this.el.getBoundingClientRect();
+        const t = e.touches[0];
+        const nx = (t.clientX - rect.left) / rect.width;
+        const ny = (t.clientY - rect.top) / rect.height;
+        const surfaceNY = 1 - this.progress;
+        this.prevMouseX = this.mouseX;
+        this.prevMouseY = this.mouseY;
+        this.mouseX = nx;
+        this.mouseY = ny;
+        this.mouseInside = ny >= (surfaceNY - 0.10);
+      }
+      _onTouchStart(e) {
+        const rect = this.el.getBoundingClientRect();
+        const t = e.touches[0];
+        const nx = (t.clientX - rect.left) / rect.width;
+        const ny = (t.clientY - rect.top) / rect.height;
+        const surfaceNY = 1 - this.progress;
+        if (ny < (surfaceNY - 0.10)) return;
+        const col = Math.floor(nx * (FLUID_COLS - 1));
+        const splashForce = CLICK_SPLASH_FORCE * this.h;
+        for (let k = -5; k <= 5; k++) {
+          const ci = col + k;
+          if (ci >= 0 && ci < FLUID_COLS) {
+            const falloff = Math.exp(-(k * k) / 4.0);
+            this.heights[ci] -= splashForce * falloff;
+          }
+        }
+      }
+      _onDeviceOrientation(e) {
+        this.tiltX = (e.gamma || 0) * (Math.PI / 180);
+        this.tiltY = (e.beta || 0) * (Math.PI / 180);
+      }
+      update() {
+        const ht = this.heights;
+        const v = this.velocities;
+        const n = FLUID_COLS;
+        this.animTime += 0.016;
+        // 1. Ambient wave — spring-to-target (matches project exactly)
+        const ambientAmp = Math.max(0.5, this.h * AMBIENT_AMP);
+        for (let i = 0; i < n; i++) {
+          const target = Math.sin(this.animTime * AMBIENT_SPEED + i * 0.35) * ambientAmp
+            + Math.sin(this.animTime * AMBIENT_SPEED * 0.7 + i * 0.22 + 2.0) * ambientAmp * 0.4;
+          ht[i] += (target - ht[i]) * 0.015;
+        }
+        // 2. Mouse interaction
+        if (this.mouseInside && this.mouseX >= 0) {
+          const col = Math.floor(this.mouseX * (n - 1));
+          const strength = this.mouseDown ? MOUSE_DRAG_STRENGTH : MOUSE_MOVE_STRENGTH;
+          if (this.prevMouseX >= 0) {
+            const mouseVelY = (this.mouseY - this.prevMouseY);
+            const mouseVelX = (this.mouseX - this.prevMouseX);
+            const totalVel = Math.abs(mouseVelY) + Math.abs(mouseVelX);
+            if (totalVel > 0.001) {
+              const force = mouseVelY * strength * this.h * 0.15;
+              const lateralForce = Math.abs(mouseVelX) * strength * this.h * 0.10;
+              for (let k = -6; k <= 6; k++) {
+                const ci = col + k;
+                if (ci >= 0 && ci < n) {
+                  const falloff = Math.exp(-(k * k) / 5.0);
+                  ht[ci] += (force + lateralForce) * falloff;
+                }
+              }
+            }
+          }
+          if (this.mouseDown) {
+            const pushForce = this.h * 0.025;
+            for (let k = -4; k <= 4; k++) {
+              const ci = col + k;
+              if (ci >= 0 && ci < n) {
+                const falloff = Math.exp(-(k * k) / 3.5);
+                ht[ci] -= pushForce * falloff;
+              }
+            }
+          }
+        }
+        // 3. Tilt gravity
+        if (Math.abs(this.tiltX) > 0.01) {
+          const gravForce = Math.sin(this.tiltX) * TILT_STRENGTH * this.h;
+          const center = n / 2;
+          for (let i = 0; i < n; i++) {
+            v[i] += gravForce * ((i - center) / center);
+          }
+        }
+        // 4. Wave equation propagation
+        for (let i = 1; i < n - 1; i++) {
+          v[i] += (ht[i - 1] + ht[i + 1] - 2 * ht[i]) * PROPAGATION;
+        }
+        v[0] += (ht[1] - ht[0]) * PROPAGATION;
+        v[n - 1] += (ht[n - 2] - ht[n - 1]) * PROPAGATION;
+        // 5. Damping + integrate
+        const maxDisp = this.h * 0.18;
+        for (let i = 0; i < n; i++) {
+          v[i] *= DAMPING;
+          ht[i] += v[i];
+          if (ht[i] > maxDisp) ht[i] = maxDisp;
+          if (ht[i] < -maxDisp) ht[i] = -maxDisp;
+        }
+        // 6. Render
+        this.render();
+      }
+      render() {
+        const ctx = this.ctx;
+        const w = this.w;
+        const h = this.h;
+        if (w < 1 || h < 1) return;
+        ctx.clearRect(0, 0, w, h);
+        const n = FLUID_COLS;
+        const eqY = h * (1 - this.progress);
+        // --- Main water body ---
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        const points = [];
+        for (let i = 0; i < n; i++) {
+          const x = (i / (n - 1)) * w;
+          const y = eqY - this.heights[i];
+          points.push({ x, y });
+        }
+        ctx.lineTo(points[0].x, points[0].y);
+        for (let i = 0; i < points.length - 1; i++) {
+          const cpX = (points[i].x + points[i + 1].x) / 2;
+          const cpY = (points[i].y + points[i + 1].y) / 2;
+          ctx.quadraticCurveTo(points[i].x, points[i].y, cpX, cpY);
+        }
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.lineTo(w, h);
+        ctx.closePath();
+        ctx.fillStyle = this.waterColor;
+        ctx.globalAlpha = 0.9;
+        ctx.fill();
+        // --- Highlight surface layer ---
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        for (let i = 0; i < n; i++) {
+          const x = (i / (n - 1)) * w;
+          const y = eqY - this.heights[i] + 2;
+          if (i === 0) {
+            ctx.lineTo(x, y);
+          } else {
+            const prevX = ((i - 1) / (n - 1)) * w;
+            const prevY = eqY - this.heights[i - 1] + 2;
+            const cpX = (prevX + x) / 2;
+            const cpY = (prevY + y) / 2;
+            ctx.quadraticCurveTo(prevX, prevY, cpX, cpY);
+          }
+        }
+        ctx.lineTo(w, h);
+        ctx.closePath();
+        ctx.fillStyle = this.waterColorHL;
+        ctx.globalAlpha = 0.6;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      destroy() {
+        this.el.removeEventListener('mousemove', this.boundMouseMove);
+        this.el.removeEventListener('mouseleave', this.boundMouseLeave);
+        this.el.removeEventListener('mousedown', this.boundMouseDown);
+        this.el.removeEventListener('touchmove', this.boundTouchMove);
+        this.el.removeEventListener('touchstart', this.boundTouchStart);
+        window.removeEventListener('mouseup', this.boundMouseUp);
+        window.removeEventListener('deviceorientation', this.boundDeviceOrientation);
+        if (this.canvas.parentNode) this.canvas.parentNode.removeChild(this.canvas);
+      }
+    }
+
+    // ─── State ───────────────────────────────────────────────────────────────────
+    let currentBirthYear = 1995;
+    let chronoMode = 'countdown';
+    let mainFluidSim = null;
+    let miniFluidSim = null;
+    let shapeFluidSim = null;
+    let debounceTimer = null;
+    let countdownTriggered = false;
+    let tooltipShown = false;
+
+    // ─── Grid Rendering ──────────────────────────────────────────────────────────
+    function renderDemoGrid(birthYear) {
+      const grid = document.getElementById('demo-grid');
+      if (mainFluidSim) { mainFluidSim = null; }
+      grid.innerHTML = '';
+
+      const lifeExpectancy = 80;
+      const totalUnits = lifeExpectancy;
+      const currentYear = new Date().getFullYear();
+      const livedUnits = Math.max(0, Math.min(currentYear - birthYear, totalUnits - 1));
+      const currentUnitIndex = livedUnits;
+
+      const containerWidth = Math.min(960, window.innerWidth * 0.92);
+      const cols = Math.max(8, Math.round(Math.sqrt(totalUnits * (containerWidth / (window.innerHeight * 0.45)))));
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < totalUnits; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('life-unit');
+        cell.setAttribute('role', 'gridcell');
+        cell.title = `${birthYear + i} — ${birthYear + i + 1}`;
+
+        if (i < livedUnits) {
+          cell.classList.add('past');
+          const opacity = 0.15 + (0.85 * Math.pow(i / Math.max(1, livedUnits), 0.7));
+          cell.style.opacity = '0';
+          cell.style.transform = 'scale(0.5)';
+          cell._targetOpacity = opacity;
+        } else if (i === currentUnitIndex) {
+          cell.classList.add('current');
+          cell.style.opacity = '0';
+          cell.style.transform = 'scale(0.5)';
+          cell._isCurrentUnit = true;
+        } else {
+          cell.classList.add('future');
+          cell.style.opacity = '0';
+          cell.style.transform = 'scale(0.5)';
+          cell._targetOpacity = 1;
+        }
+        frag.appendChild(cell);
+      }
+      grid.appendChild(frag);
+
+      const cells = grid.querySelectorAll('.life-unit');
+      cells.forEach((cell, i) => {
+        setTimeout(() => {
+          cell.style.transition = `opacity 0.3s ease, transform 0.3s var(--ease-smooth)`;
+          if (cell._isCurrentUnit) {
+            cell.style.opacity = '1';
+          } else {
+            cell.style.opacity = (cell._targetOpacity || 1).toString();
+          }
+          cell.style.transform = 'scale(1)';
+
+          if (cell._isCurrentUnit) {
+            setTimeout(() => initCurrentUnitPhysics(cell, birthYear, currentYear), 150);
+          }
+        }, i * 8);
+      });
+
+
+    }
+
+    function initCurrentUnitPhysics(cell, birthYear, currentYear) {
+      // Remove any existing fluid canvas (FluidSimulation creates its own)
+      const existing = cell.querySelector('.fluid-canvas');
+      if (existing) existing.remove();
+
+      const startMs = new Date(currentYear, 0, 1).getTime();
+      const endMs = new Date(currentYear + 1, 0, 1).getTime();
+
+      requestAnimationFrame(() => {
+        if (cell.offsetWidth === 0) {
+          setTimeout(() => initCurrentUnitPhysics(cell, birthYear, currentYear), 200);
+          return;
+        }
+        mainFluidSim = new FluidSimulation(cell);
+        const progress = (Date.now() - startMs) / (endMs - startMs);
+        mainFluidSim.setProgress(Math.max(0, Math.min(1, progress)));
+
+        // Physics tooltip
+        cell.addEventListener('mouseenter', () => {
+          if (!tooltipShown) {
+            const tip = document.getElementById('physics-tooltip');
+            const rect = cell.getBoundingClientRect();
+            tip.style.left = (rect.left + rect.width / 2 - 90) + 'px';
+            tip.style.top = (rect.top - 36) + 'px';
+            tip.style.opacity = '1';
+            setTimeout(() => { tip.style.opacity = '0'; }, 3000);
+            tooltipShown = true;
+          }
+        });
+      });
+    }
+
+    // ─── Mini Physics (Bento Card D) ─────────────────────────────────────────────
+    function initMiniPhysics() {
+      const cell = document.getElementById('mini-physics-cell');
+      const wrapper = document.getElementById('mini-physics-wrapper');
+      // Size the wrapper FIRST so FluidSimulation.resize() reads correct dimensions
+      wrapper.style.width = '80px';
+      wrapper.style.height = '80px';
+      cell.style.width = '100%';
+      cell.style.height = '100%';
+
+      setTimeout(() => {
+        if (cell.offsetWidth === 0) return;
+        // Remove any existing fluid canvas (FluidSimulation creates its own)
+        const existing = cell.querySelector('.fluid-canvas, .mini-physics-canvas');
+        if (existing) existing.remove();
+        miniFluidSim = new FluidSimulation(cell);
+        const year = new Date().getFullYear();
+        const startMs = new Date(year, 0, 1).getTime();
+        const endMs = new Date(year + 1, 0, 1).getTime();
+        const progress = (Date.now() - startMs) / (endMs - startMs);
+        miniFluidSim.setProgress(Math.max(0, Math.min(1, progress)));
+      }, 300);
+    }
+
+    // ─── Chronometer ─────────────────────────────────────────────────────────────
+    function getChronoData(birthYear, mode) {
+      const now = new Date();
+      const lifeExpectancy = 80;
+
+      if (mode === 'countdown') {
+        const deathMs = new Date(birthYear, 0, 1).getTime() + (lifeExpectancy * 365.25 * 24 * 3600 * 1000);
+        const msRemaining = deathMs - now.getTime();
+        if (msRemaining <= 0) return null;
+        const totalSecs = Math.floor(msRemaining / 1000);
+        return {
+          years: Math.floor(totalSecs / (365.25 * 24 * 3600)),
+          months: Math.floor((totalSecs % (365.25 * 24 * 3600)) / (30.44 * 24 * 3600)),
+          days: Math.floor((totalSecs % (30.44 * 24 * 3600)) / (24 * 3600)),
+          hours: Math.floor((totalSecs % (24 * 3600)) / 3600),
+          secs: totalSecs % 60,
+          ms: msRemaining % 1000
+        };
+      } else {
+        const birthMs = new Date(birthYear, 0, 1).getTime();
+        const msElapsed = now.getTime() - birthMs;
+        if (msElapsed <= 0) return null;
+        const totalSecs = Math.floor(msElapsed / 1000);
+        return {
+          years: Math.floor(totalSecs / (365.25 * 24 * 3600)),
+          months: Math.floor((totalSecs % (365.25 * 24 * 3600)) / (30.44 * 24 * 3600)),
+          days: Math.floor((totalSecs % (30.44 * 24 * 3600)) / (24 * 3600)),
+          hours: Math.floor((totalSecs % (24 * 3600)) / 3600),
+          secs: totalSecs % 60,
+          ms: msElapsed % 1000
+        };
+      }
+    }
+
+    function updateChronoDisplay() {
+      const data = getChronoData(currentBirthYear, chronoMode);
+      if (!data) return;
+      document.getElementById('c-years').textContent = data.years.toLocaleString();
+      document.getElementById('c-months').textContent = data.months.toString().padStart(2, '0');
+      document.getElementById('c-days').textContent = data.days.toString().padStart(3, '0');
+      document.getElementById('c-hours').textContent = data.hours.toString().padStart(2, '0');
+      document.getElementById('c-secs').textContent = data.secs.toString().padStart(2, '0');
+      document.getElementById('c-ms').textContent = data.ms.toString().padStart(3, '0');
+    }
+
+    // ─── Master rAF Loop ─────────────────────────────────────────────────────────
+    function masterLoop() {
+      // Main demo grid fluid sim (current year cell)
+      if (mainFluidSim && mainFluidSim.w > 0) {
+        const year = new Date().getFullYear();
+        const startMs = new Date(year, 0, 1).getTime();
+        const endMs = new Date(year + 1, 0, 1).getTime();
+        const progress = (Date.now() - startMs) / (endMs - startMs);
+        mainFluidSim.setProgress(Math.max(0, Math.min(1, progress)));
+        mainFluidSim.update();
+      }
+      // Bento Card D — mini fluid sim
+      if (miniFluidSim && miniFluidSim.w > 0) {
+        const year = new Date().getFullYear();
+        const startMs = new Date(year, 0, 1).getTime();
+        const endMs = new Date(year + 1, 0, 1).getTime();
+        const progress = (Date.now() - startMs) / (endMs - startMs);
+        miniFluidSim.setProgress(Math.max(0, Math.min(1, progress)));
+        miniFluidSim.update();
+      }
+      // Bento Card F — shape preview .current-s fluid sim
+      if (shapeFluidSim && shapeFluidSim.w > 0) {
+        const year = new Date().getFullYear();
+        const startMs = new Date(year, 0, 1).getTime();
+        const endMs = new Date(year + 1, 0, 1).getTime();
+        const progress = (Date.now() - startMs) / (endMs - startMs);
+        shapeFluidSim.setProgress(Math.max(0, Math.min(1, progress)));
+        shapeFluidSim.update();
+      }
+      // Chronometer
+      updateChronoDisplay();
+      requestAnimationFrame(masterLoop);
+    }
+
+    // ─── Birth Year Input ─────────────────────────────────────────────────────────
+    document.getElementById('birthYearInput').addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      const val = parseInt(e.target.value);
+      if (val >= 1920 && val <= 2020) {
+        debounceTimer = setTimeout(() => {
+          currentBirthYear = val;
+          renderDemoGrid(val);
+          initLifeData();
+        }, 300);
+      }
+    });
+
+    // ─── Chronometer Toggle ───────────────────────────────────────────────────────
+    document.getElementById('btn-countdown').addEventListener('click', () => {
+      if (chronoMode === 'countdown') return;
+      const display = document.getElementById('chrono-display');
+      display.classList.add('blurring');
+      setTimeout(() => {
+        chronoMode = 'countdown';
+        document.getElementById('btn-countdown').classList.add('active');
+        document.getElementById('btn-countdown').setAttribute('aria-pressed', 'true');
+        document.getElementById('btn-age').classList.remove('active');
+        document.getElementById('btn-age').setAttribute('aria-pressed', 'false');
+        display.classList.remove('blurring');
+      }, 300);
+    });
+    document.getElementById('btn-age').addEventListener('click', () => {
+      if (chronoMode === 'age') return;
+      const display = document.getElementById('chrono-display');
+      display.classList.add('blurring');
+      setTimeout(() => {
+        chronoMode = 'age';
+        document.getElementById('btn-age').classList.add('active');
+        document.getElementById('btn-age').setAttribute('aria-pressed', 'true');
+        document.getElementById('btn-countdown').classList.remove('active');
+        document.getElementById('btn-countdown').setAttribute('aria-pressed', 'false');
+        display.classList.remove('blurring');
+      }, 300);
+    });
+
+    // ─── Bento: Theme Switcher (Circle-Reveal, 120fps) ───────────────────────────
+    (function initThemeSwitcher() {
+      const THEME_DATA = {
+        'Dark':      { bg: '#070707', fg: '#ffffff', mid: '#888888', pillFg: '#ffffff', label: 'DARK' },
+        'Ivory':     { bg: '#F4F3EE', fg: '#C15F3C', mid: '#B1ADA1', pillFg: '#1a1a1a', label: 'IVORY' },
+        'Midnight':  { bg: '#050B14', fg: '#4382EC', mid: '#6481a8', pillFg: '#f0f4fc', label: 'MIDNIGHT' },
+        'Cyber':     { bg: '#0B0115', fg: '#FF007F', mid: '#845b9b', pillFg: '#fbdbff', label: 'CYBER' },
+        'Forest':    { bg: '#0c140f', fg: '#4ADE80', mid: '#629676', pillFg: '#ecfdf3', label: 'FOREST' },
+        'Sunset':    { bg: '#140801', fg: '#ff6a00', mid: '#966144', pillFg: '#fff2ea', label: 'SUNSET' },
+        'Mono':      { bg: '#FFFFFF', fg: '#000000', mid: '#888888', pillFg: '#000000', label: 'MONO' }
+      };
+
+      // Target: the full bento card — NOT a preview bar
+      const card = document.getElementById('theme-card');
+      if (!card) return;
+
+      // Inject the reveal layer directly into the card (sits under content via z-index:1)
+      const revealLayer = document.createElement('div');
+      revealLayer.id = 'theme-reveal-layer';
+      // Insert as first child so content z-index:2 sits above it
+      card.insertBefore(revealLayer, card.firstChild);
+
+      // Set the card's initial background to match the default Dark theme
+      card.style.background = '#070707';
+      card.style.borderColor = 'rgba(255,255,255,0.08)';
+
+      // Update theme-pill colors to match starting theme
+      document.querySelectorAll('.theme-pill').forEach(p => {
+        p.style.color = 'rgba(255,255,255,0.5)';
+        p.style.borderColor = 'rgba(255,255,255,0.12)';
+      });
+      document.querySelector('.theme-pill.active').style.color = '#ffffff';
+
+      let revealRafId = null;
+
+      document.querySelectorAll('.theme-pill').forEach(pill => {
+        pill.addEventListener('click', (e) => {
+          document.querySelectorAll('.theme-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+
+          const themeName = pill.textContent.trim();
+          const theme = THEME_DATA[themeName];
+          if (!theme) return;
+
+          // Click origin is relative to the FULL BENTO CARD
+          const cardRect = card.getBoundingClientRect();
+          const originX = Math.round(((e.clientX - cardRect.left) / cardRect.width) * 100);
+          const originY = Math.round(((e.clientY - cardRect.top) / cardRect.height) * 100);
+
+          // Cancel any running animation
+          if (revealRafId) cancelAnimationFrame(revealRafId);
+
+          // Stage reveal layer: solid color that will expand to cover the whole card
+          revealLayer.style.background = theme.bg;
+          revealLayer.style.clipPath = `circle(0% at ${originX}% ${originY}%)`;
+
+          // 120fps radial expand via rAF — easeOutQuint over 480ms
+          const durationMs = 480;
+          const startTs = performance.now();
+
+          function easeOutQuint(t) { return 1 - Math.pow(1 - t, 5); }
+
+          function frame(now) {
+            const elapsed = now - startTs;
+            const t = Math.min(elapsed / durationMs, 1);
+            const eased = easeOutQuint(t);
+            // 175% ensures the circle covers even the farthest corner from any origin
+            const radius = eased * 175;
+            revealLayer.style.clipPath = `circle(${radius}% at ${originX}% ${originY}%)`;
+
+            if (t < 1) {
+              revealRafId = requestAnimationFrame(frame);
+            } else {
+              // Commit: set the card background to the new theme, collapse reveal layer
+              revealLayer.style.clipPath = `circle(0% at 50% 50%)`;
+              card.style.background = theme.bg;
+              card.style.borderColor = `${theme.fg}22`;
+              // Adapt text colors so they're always readable on the new background
+              const title = card.querySelector('.bento-title');
+              const body = card.querySelector('.bento-body');
+              if (title) title.style.color = theme.fg;
+              if (body) body.style.color = theme.mid;
+              // Update pill text/border colors to be visible on new bg
+              document.querySelectorAll('.theme-pill').forEach(p => {
+                p.style.color = theme.mid;
+                p.style.borderColor = `${theme.fg}30`;
+              });
+              pill.style.color = theme.fg;
+              revealRafId = null;
+            }
+          }
+          revealRafId = requestAnimationFrame(frame);
+        });
+      });
+    })();
+
+    // ─── Bento: Granularity Toggle ───────────────────────────────────────────────
+    function renderMiniGrid(gran) {
+      const container = document.getElementById('mini-grid-preview');
+      container.innerHTML = '';
+      const counts = { weeks: 16, months: 9, years: 4 };
+      const cols = { weeks: 4, months: 3, years: 2 };
+      const n = counts[gran];
+      const c = cols[gran];
+      container.style.gridTemplateColumns = `repeat(${c}, 1fr)`;
+      for (let i = 0; i < n; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('mini-cell');
+        if (i >= Math.floor(n * 0.55)) cell.classList.add('future-cell');
+        container.appendChild(cell);
+      }
+    }
+    document.querySelectorAll('.gran-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.gran-pill').forEach(p => { p.classList.remove('active'); p.setAttribute('aria-pressed', 'false'); });
+        pill.classList.add('active');
+        pill.setAttribute('aria-pressed', 'true');
+        renderMiniGrid(pill.dataset.gran);
+      });
+    });
+    renderMiniGrid('months');
+
+    // ─── Bento: Shape Toggle ─────────────────────────────────────────────────────
+    function renderShapeGrid(isCircle) {
+      const grid = document.getElementById('shape-preview-grid');
+      const cells = grid.querySelectorAll('.shape-cell');
+      cells.forEach((cell, i) => {
+        setTimeout(() => {
+          cell.style.borderRadius = isCircle ? '50%' : '1px';
+        }, i * 20);
+      });
+    }
+    function buildShapeGrid() {
+      const grid = document.getElementById('shape-preview-grid');
+      for (let i = 0; i < 30; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('shape-cell');
+        if (i < 17) cell.classList.add('past-s');
+        else if (i === 17) cell.classList.add('current-s');
+        else cell.classList.add('future-s');
+        grid.appendChild(cell);
+      }
+      // Attach live fluid physics to the current-s cell (index 17)
+      // Uses an IntersectionObserver so we only init when the bento card scrolls into view
+      const currentSCell = grid.querySelectorAll('.shape-cell')[17];
+      if (currentSCell) {
+        const shapePhysicsObserver = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting && !shapeFluidSim) {
+              requestAnimationFrame(() => {
+                if (currentSCell.offsetWidth === 0) return;
+                // Remove any existing canvas (FluidSimulation creates its own)
+                const existingCanvas = currentSCell.querySelector('.fluid-canvas');
+                if (existingCanvas) existingCanvas.remove();
+                // Init FluidSimulation — creates canvas internally with pointer-events:none
+                shapeFluidSim = new FluidSimulation(currentSCell);
+                const year = new Date().getFullYear();
+                const startMs = new Date(year, 0, 1).getTime();
+                const endMs = new Date(year + 1, 0, 1).getTime();
+                const progress = (Date.now() - startMs) / (endMs - startMs);
+                shapeFluidSim.setProgress(Math.max(0, Math.min(1, progress)));
+                shapePhysicsObserver.unobserve(currentSCell);
+              });
+            }
+          });
+        }, { threshold: 0.3 });
+        shapePhysicsObserver.observe(currentSCell);
+      }
+    }
+    buildShapeGrid();
+    document.getElementById('btn-squares').addEventListener('click', () => {
+      document.getElementById('btn-squares').classList.add('active');
+      document.getElementById('btn-squares').setAttribute('aria-pressed', 'true');
+      document.getElementById('btn-circles').classList.remove('active');
+      document.getElementById('btn-circles').setAttribute('aria-pressed', 'false');
+      renderShapeGrid(false);
+    });
+    document.getElementById('btn-circles').addEventListener('click', () => {
+      document.getElementById('btn-circles').classList.add('active');
+      document.getElementById('btn-circles').setAttribute('aria-pressed', 'true');
+      document.getElementById('btn-squares').classList.remove('active');
+      document.getElementById('btn-squares').setAttribute('aria-pressed', 'false');
+      renderShapeGrid(true);
+    });
+
+    // ─── Section 5: Countdown Animation ─────────────────────────────────────────
+    const countdownObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !countdownTriggered) {
+          countdownTriggered = true;
+          const el = document.getElementById('countdown-number');
+          const start = 4160;
+          const end = 1;
+          const duration = 2000;
+          const startTime = performance.now();
+          function animate(now) {
+            const elapsed = now - startTime;
+            const t = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - t, 3);
+            const val = Math.round(start - (start - end) * eased);
+            el.textContent = val.toLocaleString();
+            if (t < 1) requestAnimationFrame(animate);
+            else el.textContent = '1';
+          }
+          requestAnimationFrame(animate);
+          countdownObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.4 });
+    const countEl = document.getElementById('countdown-number');
+    if (countEl) countdownObserver.observe(countEl.closest('.stanza'));
+
+    // ─── Scroll Reveal ───────────────────────────────────────────────────────────
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const delay = entry.target.dataset.revealDelay || '0';
+          setTimeout(() => {
+            entry.target.classList.add('revealed');
+          }, parseInt(delay));
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll('[data-reveal]').forEach(el => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(20px)';
+      el.style.transition = 'opacity 0.6s var(--ease-smooth), transform 0.6s var(--ease-smooth)';
+      revealObserver.observe(el);
+    });
+
+    // ─── Scroll Indicator Hide ─────────────────────────────────────────────────
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 80) {
+        document.getElementById('scroll-indicator').classList.add('hidden');
+      }
+    }, { passive: true });
+
+    // ─── Headline Animation ───────────────────────────────────────────────────────
+    function runHeadlineAnimation() {
+      const wordEl = document.getElementById('headline-word');
+      const outWord = document.getElementById('headline-out');
+
+      setTimeout(() => {
+        const line = document.createElement('span');
+        line.className = 'strikethrough-line';
+        wordEl.style.position = 'relative';
+        wordEl.appendChild(line);
+
+        // Animate strikethrough
+        let start = null;
+        function animateLine(ts) {
+          if (!start) start = ts;
+          const progress = Math.min((ts - start) / 400, 1);
+          line.style.width = (progress * 100) + '%';
+          if (progress < 1) requestAnimationFrame(animateLine);
+          else {
+            setTimeout(() => {
+              outWord.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+              outWord.style.opacity = '0';
+              outWord.style.transform = 'translateY(-8px)';
+              setTimeout(() => {
+                outWord.style.display = 'none';
+                line.remove();
+              }, 280);
+            }, 100);
+          }
+        }
+        requestAnimationFrame(animateLine);
+      }, 1200);
+    }
+
+    // ─── ResizeObserver ────────────────────────────────────────────────────────
+    const resizeObs = new ResizeObserver(() => {
+      if (mainFluidSim) mainFluidSim.resize();
+      if (miniFluidSim) miniFluidSim.resize();
+      if (shapeFluidSim) shapeFluidSim.resize();
+      const grid = document.getElementById('demo-grid');
+      if (grid && grid.children.length > 0) {
+        const containerWidth = Math.min(960, window.innerWidth * 0.92);
+        const totalUnits = 80;
+        const cols = Math.max(8, Math.round(Math.sqrt(totalUnits * (containerWidth / (window.innerHeight * 0.45)))));
+        grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      }
+    });
+    resizeObs.observe(document.body);
+
+    // ─── Init ─────────────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      renderDemoGrid(currentBirthYear);
+      initMiniPhysics();
+      runHeadlineAnimation();
+      initLifeData();
+      initTypingEffect();
+      initMilestones();
+      initWorldClock();
+      initQuotes();
+      initBreathing();
+      initScrollDots();
+      initKeyboardShortcuts();
+      initHeroParticles();
+      initDailyBars();
+      initSessionTimer();
+      initFloatingNav();
+      initCustomCursor();
+      requestAnimationFrame(masterLoop);
+      requestAnimationFrame(tickLiveElements);
+    });
+
+    // ─── Life Data Computation ─────────────────────────────────────────────
+    function initLifeData() {
+      // Stats now handled dynamically inside tickLiveElements
+    }
+
+    // ─── Typing Effect ─────────────────────────────────────────────────────
+    function initTypingEffect() {
+      const el = document.getElementById('typing-line');
+      if (!el) return;
+      const text = 'The white blocks are gone. You cannot get them back. The dark ones still belong to you.';
+      let i = 0;
+      const cursor = document.createElement('span');
+      cursor.style.cssText = 'display:inline-block;width:2px;height:1em;background:#888;margin-left:2px;vertical-align:text-bottom;animation:cursorBlink 0.8s step-end infinite';
+      el.appendChild(cursor);
+      function type() {
+        if (i < text.length) {
+          cursor.before(text[i]);
+          i++;
+          setTimeout(type, 30 + Math.random() * 40);
+        } else {
+          setTimeout(() => { cursor.style.display = 'none'; }, 3000);
+        }
+      }
+      // Start typing after the element becomes visible
+      const obs = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) { setTimeout(type, 800); obs.disconnect(); }
+      }, { threshold: 0.5 });
+      obs.observe(el);
+    }
+
+    // ─── Live Age Counter + Year Progress (ticks every frame) ──────────
+    function tickLiveElements(ts) {
+      const now = new Date();
+      const birthDate = new Date(currentBirthYear, 0, 1);
+      // Age clock
+      const totalMs = Math.max(0, now - birthDate);
+      const totalSec = totalMs / 1000;
+      const ageYearsDecimal = totalSec / (365.25 * 86400);
+      const remainingDecimal = Math.max(0, 80 - ageYearsDecimal);
+      const lifePct = Math.min(100, Math.max(0, (ageYearsDecimal / 80) * 100));
+
+      const years = Math.floor(ageYearsDecimal);
+      const remAfterYears = totalSec - years * 365.25 * 86400;
+      const days = Math.floor(remAfterYears / 86400);
+      const hrs = Math.floor((remAfterYears % 86400) / 3600);
+      const min = Math.floor((remAfterYears % 3600) / 60);
+      const sec = Math.floor(remAfterYears % 60);
+
+      const el = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+
+      el('ac-yrs', years);
+      el('ac-days', String(days).padStart(3, '0'));
+      el('ac-hrs', String(hrs).padStart(2, '0'));
+      el('ac-min', String(min).padStart(2, '0'));
+      el('ac-sec', String(sec).padStart(2, '0'));
+
+      // Real-time grid stats (top bar)
+      el('stat-lived', ageYearsDecimal.toFixed(7));
+      el('stat-remaining', remainingDecimal.toFixed(7));
+      el('stat-pct', lifePct.toFixed(6) + '%');
+
+      // Real-time life data bar (bottom of grid)
+      el('ld-years', ageYearsDecimal.toFixed(7));
+      el('ld-remaining', remainingDecimal.toFixed(7));
+      el('ld-weeks', (ageYearsDecimal * 52.1775).toFixed(4));
+      el('ld-pct', lifePct.toFixed(6));
+
+      // Heartbeats / breaths / sunrises (animated)
+      const heartbeats = Math.floor(totalSec * (72 / 60));
+      const breaths = Math.floor(totalSec * (15 / 60));
+      const sunrises = Math.floor(ageYearsDecimal * 365.25);
+      el('stat-heartbeats', heartbeats.toLocaleString());
+      el('stat-breaths', breaths.toLocaleString());
+      el('stat-sunrises', sunrises.toLocaleString());
+
+      // Life progress
+      el('year-pct', lifePct.toFixed(6) + '%');
+      const bar = document.getElementById('year-bar');
+      if (bar) bar.style.width = lifePct + '%';
+
+      // Arc of Life realtime update
+      if (window.arcRevealStarted) {
+        if (typeof window.arcAnimatedFrac === 'undefined') window.arcAnimatedFrac = 0;
+        const targetFraction = Math.min(ageYearsDecimal / 80, 1);
+        window.arcAnimatedFrac += (targetFraction - window.arcAnimatedFrac) * 0.04;
+
+        const basePath = document.getElementById('arc-base');
+        const progressPath = document.getElementById('arc-progress');
+        const orbEl = document.getElementById('arc-orb');
+        if (basePath && progressPath && orbEl) {
+          const totalLength = basePath.getTotalLength();
+          const currentLength = window.arcAnimatedFrac * totalLength;
+          progressPath.style.strokeDashoffset = totalLength - currentLength;
+
+          const pt = basePath.getPointAtLength(currentLength);
+          orbEl.setAttribute('cx', pt.x);
+          orbEl.setAttribute('cy', pt.y);
+          orbEl.setAttribute('opacity', '1');
+
+          const currentAge = window.arcAnimatedFrac * 80;
+          document.querySelectorAll('#arc-milestone-dots circle').forEach((dot) => {
+            const dotAge = parseFloat(dot.getAttribute('data-age'));
+            if (dotAge <= currentAge) {
+              dot.setAttribute('fill', 'rgba(255,255,255,0.6)');
+              dot.setAttribute('r', '4');
+            } else {
+              dot.setAttribute('fill', 'rgba(255,255,255,0.08)');
+              dot.setAttribute('r', '3');
+            }
+          });
+          document.querySelectorAll('.arc-label-text').forEach((lbl) => {
+            const a = parseFloat(lbl.dataset.age);
+            lbl.classList.toggle('lit', a <= currentAge);
+            lbl.classList.toggle('current-label', Math.abs(a - Math.floor(ageYearsDecimal)) < 1);
+          });
+          document.querySelectorAll('.arc-label-age').forEach((lbl) => {
+            lbl.classList.toggle('lit', parseFloat(lbl.dataset.age) <= currentAge);
+          });
+        }
+      }
+
+      // Footer time
+      el('footer-time', now.toLocaleTimeString('en-US', { hour12: false }));
+
+      // Footer countdown to next year
+      const yearEnd = new Date(now.getFullYear() + 1, 0, 1);
+      const msToNext = Math.max(0, yearEnd - now);
+      const dToNext = Math.floor(msToNext / 86400000);
+      const hToNext = Math.floor((msToNext % 86400000) / 3600000);
+      const mToNext = Math.floor((msToNext % 3600000) / 60000);
+      const sToNext = Math.floor((msToNext % 60000) / 1000);
+      el('footer-countdown', dToNext + 'd ' + hToNext + 'h ' + mToNext + 'm ' + sToNext + 's');
+
+      // Scroll percentage
+      const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight);
+      const scrollPct = Math.round((window.scrollY / maxScroll) * 100) || 0;
+      const scrollEl = document.getElementById('scroll-pct');
+      if (scrollEl) scrollEl.textContent = scrollPct + '% explored';
+
+      requestAnimationFrame(tickLiveElements);
+    }
+
+    // ─── Milestones Arc of Life ─────────────────────────────────────────────
+    function initMilestones() {
+      const basePath = document.getElementById('arc-base');
+      const progressPath = document.getElementById('arc-progress');
+      const orbEl = document.getElementById('arc-orb');
+      const dotsGroup = document.getElementById('arc-milestone-dots');
+      const labelsContainer = document.getElementById('arc-labels');
+      if (!basePath || !progressPath || !orbEl || !labelsContainer) return;
+
+      // Cleanup previous state on re-init
+      if (dotsGroup) dotsGroup.innerHTML = '';
+      labelsContainer.innerHTML = '';
+
+      const milestones = [
+        { age: 0, label: 'Born' }, { age: 6, label: 'School' }, { age: 13, label: 'Teen' },
+        { age: 18, label: 'Adult' }, { age: 22, label: 'Career' }, { age: 30, label: 'Prime' },
+        { age: 40, label: 'Midlife' }, { age: 50, label: 'Wisdom' }, { age: 60, label: 'Retire' },
+        { age: 70, label: 'Legacy' }, { age: 80, label: 'Complete' }
+      ];
+
+      const totalLength = basePath.getTotalLength();
+      progressPath.style.strokeDasharray = totalLength;
+      progressPath.style.strokeDashoffset = totalLength;
+
+      // Place milestone dots on the arc
+      milestones.forEach((m) => {
+        const frac = m.age / 80;
+        const pt = basePath.getPointAtLength(frac * totalLength);
+        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('cx', pt.x);
+        dot.setAttribute('cy', pt.y);
+        dot.setAttribute('r', '3');
+        dot.setAttribute('fill', 'rgba(255,255,255,0.08)');
+        dot.setAttribute('data-age', m.age);
+        dot.style.transition = 'fill 0.4s ease, r 0.3s ease';
+        dotsGroup.appendChild(dot);
+      });
+
+      // Build labels
+      milestones.forEach((m) => {
+        const lbl = document.createElement('div');
+        lbl.className = 'arc-label';
+        lbl.innerHTML = '<div class="arc-label-text" data-age="' + m.age + '">' + m.label + '</div><div class="arc-label-age" data-age="' + m.age + '">' + m.age + '</div>';
+        labelsContainer.appendChild(lbl);
+      });
+
+      window.arcRevealStarted = false;
+      const section = document.getElementById('arc-container');
+      const obs = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          window.arcRevealStarted = true;
+          obs.disconnect();
+        }
+      }, { threshold: 0.3 });
+      if (section) obs.observe(section);
+    }
+
+    // ─── World Clock ───────────────────────────────────────────────────────
+    function initWorldClock() {
+      const grid = document.getElementById('world-clock-grid');
+      if (!grid) return;
+      const cities = [
+        { name: 'NYC', tz: 'America/New_York' }, { name: 'London', tz: 'Europe/London' },
+        { name: 'Paris', tz: 'Europe/Paris' }, { name: 'Dubai', tz: 'Asia/Dubai' },
+        { name: 'Mumbai', tz: 'Asia/Kolkata' }, { name: 'Tokyo', tz: 'Asia/Tokyo' },
+        { name: 'Sydney', tz: 'Australia/Sydney' }, { name: 'LA', tz: 'America/Los_Angeles' }
+      ];
+      cities.forEach(c => {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:4px;padding:1rem;text-align:center;transition:border-color 0.2s';
+        div.onmouseover = () => div.style.borderColor = 'rgba(255,255,255,0.15)';
+        div.onmouseout = () => div.style.borderColor = 'rgba(255,255,255,0.06)';
+        div.innerHTML = '<div style="font-size:0.6rem;color:#555;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">' + c.name + '</div><div id="wc-' + c.name.toLowerCase().replace(/\s/g, '') + '" style="font-size:1.1rem;font-weight:200;color:#ededed;font-variant-numeric:tabular-nums">--:--</div>';
+        grid.appendChild(div);
+      });
+      function tickClocks() {
+        const now = new Date();
+        cities.forEach(c => {
+          const el = document.getElementById('wc-' + c.name.toLowerCase().replace(/\s/g, ''));
+          if (el) el.textContent = now.toLocaleTimeString('en-US', { timeZone: c.tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        });
+      }
+      tickClocks();
+      setInterval(tickClocks, 1000);
+    }
+
+    // ─── Quote Rotation ────────────────────────────────────────────────────
+    function initQuotes() {
+      const quotes = [
+        { text: '"It is not that we have a short time to live, but that we waste a great deal of it."', author: 'Seneca' },
+        { text: '"The trouble is, you think you have time."', author: 'Buddha' },
+        { text: '"Time is the most valuable thing a man can spend."', author: 'Theophrastus' },
+        { text: '"Lost time is never found again."', author: 'Benjamin Franklin' },
+        { text: '"We are dying from the moment we are born."', author: 'Marcus Aurelius' },
+        { text: '"How we spend our days is, of course, how we spend our lives."', author: 'Annie Dillard' },
+        { text: '"Time flies over us, but leaves its shadow behind."', author: 'Nathaniel Hawthorne' },
+        { text: '"The fear of death follows from the fear of life. One who lives life fully is prepared to die at any time."', author: 'Mark Twain' }
+      ];
+      let idx = 0;
+      const textEl = document.getElementById('quote-text');
+      const authorEl = document.getElementById('quote-author');
+      const dotsEl = document.getElementById('quote-dots');
+      const copyBtn = document.getElementById('quote-copy');
+      if (!textEl || !dotsEl) return;
+      // Build dots
+      quotes.forEach((_, i) => {
+        const d = document.createElement('div');
+        d.style.cssText = 'width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,' + (i === 0 ? '0.5' : '0.12') + ');transition:background 0.3s;cursor:pointer';
+        d.onclick = () => { idx = i; show(); };
+        dotsEl.appendChild(d);
+      });
+      function show() {
+        textEl.style.opacity = '0';
+        authorEl.style.opacity = '0';
+        setTimeout(() => {
+          textEl.textContent = quotes[idx].text;
+          authorEl.textContent = '— ' + quotes[idx].author;
+          textEl.style.opacity = '1';
+          authorEl.style.opacity = '1';
+          Array.from(dotsEl.children).forEach((d, i) => d.style.background = 'rgba(255,255,255,' + (i === idx ? '0.5' : '0.12') + ')');
+        }, 500);
+      }
+      show();
+      setInterval(() => { idx = (idx + 1) % quotes.length; show(); }, 8000);
+      if (copyBtn) {
+        const labelSpan = copyBtn.querySelector('span');
+        copyBtn.onclick = (e) => {
+          navigator.clipboard.writeText(quotes[idx].text + ' — ' + quotes[idx].author);
+          // Ripple effect
+          const ripple = document.createElement('div');
+          ripple.className = 'copy-ripple';
+          const rect = copyBtn.getBoundingClientRect();
+          const size = Math.max(rect.width, rect.height) * 2;
+          ripple.style.cssText = 'width:' + size + 'px;height:' + size + 'px;left:' + (e.clientX - rect.left - size / 2) + 'px;top:' + (e.clientY - rect.top - size / 2) + 'px;opacity:0.3;';
+          copyBtn.appendChild(ripple);
+          // Icon swap
+          copyBtn.classList.add('success');
+          if (labelSpan) labelSpan.textContent = 'Copied';
+          setTimeout(() => {
+            copyBtn.classList.remove('success');
+            if (labelSpan) labelSpan.textContent = 'Copy';
+            if (ripple.parentNode) ripple.remove();
+          }, 2000);
+        };
+      }
+    }
+
+    // ─── Breathing Exercise (4-7-8) with Web Audio Calming Tones ────────
+    function initBreathing() {
+      const circle = document.getElementById('breathing-circle');
+      const textEl = document.getElementById('breathing-text');
+      if (!circle || !textEl) return;
+      let running = false, timer = null;
+      let audioCtx = null;
+      let gainNode = null;
+
+      function ensureAudio() {
+        if (audioCtx) return;
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        gainNode = audioCtx.createGain();
+        gainNode.gain.value = 0;
+        gainNode.connect(audioCtx.destination);
+      }
+
+      function playTone(freq, duration, fadeIn, fadeOut) {
+        ensureAudio();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const oscGain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        oscGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        oscGain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + fadeIn);
+        oscGain.gain.setValueAtTime(0.08, audioCtx.currentTime + duration - fadeOut);
+        oscGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
+        osc.connect(oscGain);
+        oscGain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + duration);
+        // Add soft harmonic
+        const osc2 = audioCtx.createOscillator();
+        const osc2Gain = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.value = freq * 1.5;
+        osc2Gain.gain.setValueAtTime(0, audioCtx.currentTime);
+        osc2Gain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + fadeIn);
+        osc2Gain.gain.setValueAtTime(0.03, audioCtx.currentTime + duration - fadeOut);
+        osc2Gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
+        osc2.connect(osc2Gain);
+        osc2Gain.connect(audioCtx.destination);
+        osc2.start(audioCtx.currentTime);
+        osc2.stop(audioCtx.currentTime + duration);
+      }
+
+      function startBreathing() {
+        if (running) { stopBreathing(); return; }
+        running = true;
+        runCycle();
+      }
+      function runCycle() {
+        if (!running) return;
+        // Inhale 4s — ascending tone (C4 to E4)
+        circle.className = 'breathing-circle inhale';
+        textEl.textContent = 'inhale';
+        textEl.style.color = '#ededed';
+        playTone(261.63, 4, 0.5, 0.3); // C4
+        timer = setTimeout(() => {
+          if (!running) return;
+          // Hold 7s — sustained gentle tone (G4)
+          circle.className = 'breathing-circle hold';
+          textEl.textContent = 'hold';
+          textEl.style.color = '#888';
+          playTone(392, 7, 0.3, 0.5); // G4
+          timer = setTimeout(() => {
+            if (!running) return;
+            // Exhale 8s — descending tone (E4 to C4)
+            circle.className = 'breathing-circle exhale';
+            textEl.textContent = 'exhale';
+            textEl.style.color = '#555';
+            playTone(329.63, 8, 0.3, 1.5); // E4
+            timer = setTimeout(() => { runCycle(); }, 8000);
+          }, 7000);
+        }, 4000);
+      }
+      function stopBreathing() {
+        running = false;
+        clearTimeout(timer);
+        circle.className = 'breathing-circle';
+        textEl.textContent = 'start';
+        textEl.style.color = '#555';
+      }
+      circle.addEventListener('click', startBreathing);
+      window._toggleBreathing = startBreathing;
+    }
+
+    // ─── Scroll Dots ───────────────────────────────────────────────────────
+    function initScrollDots() {
+      const dots = document.querySelectorAll('.scroll-dot-link');
+      if (!dots.length) return;
+      const sections = Array.from(dots).map(d => document.querySelector(d.getAttribute('href'))).filter(Boolean);
+      window.addEventListener('scroll', () => {
+        const scrollY = window.scrollY + window.innerHeight / 3;
+        let activeIdx = 0;
+        sections.forEach((s, i) => { if (s.offsetTop <= scrollY) activeIdx = i; });
+        dots.forEach((d, i) => d.classList.toggle('active', i === activeIdx));
+      }, { passive: true });
+    }
+
+    // ─── Keyboard Shortcuts ────────────────────────────────────────────────
+    function initKeyboardShortcuts() {
+      const modal = document.getElementById('shortcuts-modal');
+      const btnOpen = document.getElementById('btn-shortcuts');
+      const btnClose = document.getElementById('close-shortcuts');
+      if (btnOpen) btnOpen.onclick = () => modal && modal.classList.add('active');
+      if (btnClose) btnClose.onclick = () => modal && modal.classList.remove('active');
+      if (modal) modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
+      const sectionIds = ['hero', 'demo', 'chronometer-section', 'daily-distribution', 'breathing-section', 'features', 'milestones', 'weight', 'stats-section', 'life-equivalents', 'world-clock', 'testimonials', 'install', 'faq', 'donation'];
+      const sectionEls = sectionIds.map(id => document.getElementById(id)).filter(Boolean);
+      let currentSectionIdx = 0;
+      document.addEventListener('keydown', (e) => {
+        // Don't trigger if user is typing in an input
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        const key = e.key.toLowerCase();
+        if (key === 'escape' && modal) { modal.classList.remove('active'); return; }
+        if (key === '?') { modal && modal.classList.add('active'); return; }
+        if (key === 'j') {
+          currentSectionIdx = Math.min(currentSectionIdx + 1, sectionEls.length - 1);
+          sectionEls[currentSectionIdx].scrollIntoView({ behavior: 'smooth' });
+          return;
+        }
+        if (key === 'k') {
+          currentSectionIdx = Math.max(currentSectionIdx - 1, 0);
+          sectionEls[currentSectionIdx].scrollIntoView({ behavior: 'smooth' });
+          return;
+        }
+        if (key === 'b' && window._toggleBreathing) { window._toggleBreathing(); return; }
+        if (key === 't') { window.scrollTo({ top: 0, behavior: 'smooth' }); currentSectionIdx = 0; return; }
+        if (key === 'm') {
+          const ageBtn = document.getElementById('btn-age');
+          const cdBtn = document.getElementById('btn-countdown');
+          if (ageBtn && cdBtn) { (ageBtn.classList.contains('active') ? cdBtn : ageBtn).click(); }
+          return;
+        }
+      });
+    }
+
+    // ─── Hero Floating Particles ───────────────────────────────────────────
+    function initHeroParticles() {
+      const container = document.getElementById('hero-particles');
+      if (!container) return;
+      const heroSection = document.getElementById('hero');
+      if (!heroSection) return;
+
+      const count = 40;
+      const particles = [];
+      let mouseX = -9999, mouseY = -9999;
+      const influenceRadius = 120;
+
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'hero-particle';
+        const baseX = Math.random() * 100;
+        const baseY = Math.random() * 100;
+        const size = 1.5 + Math.random() * 1.5;
+        p.style.cssText = 'left:' + baseX + '%;top:' + baseY + '%;width:' + size + 'px;height:' + size + 'px;opacity:0.03;';
+        container.appendChild(p);
+        particles.push({
+          el: p,
+          baseX: baseX,
+          baseY: baseY,
+          offsetX: 0,
+          offsetY: 0
+        });
+      }
+
+      heroSection.addEventListener('mousemove', (e) => {
+        const rect = heroSection.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+      }, { passive: true });
+
+      heroSection.addEventListener('mouseleave', () => {
+        mouseX = -9999;
+        mouseY = -9999;
+      });
+
+      function tick() {
+        const w = heroSection.offsetWidth;
+        const h = heroSection.offsetHeight;
+
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          const px = (p.baseX / 100) * w;
+          const py = (p.baseY / 100) * h;
+          const dx = px - mouseX;
+          const dy = py - mouseY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          let targetOffX = 0, targetOffY = 0;
+          let targetOpacity = 0.03;
+
+          if (dist < influenceRadius && mouseX > 0) {
+            const force = (1 - dist / influenceRadius) * 35;
+            const angle = Math.atan2(dy, dx);
+            targetOffX = Math.cos(angle) * force;
+            targetOffY = Math.sin(angle) * force;
+            targetOpacity = 0.06 + (1 - dist / influenceRadius) * 0.12;
+          }
+
+          p.offsetX += (targetOffX - p.offsetX) * 0.06;
+          p.offsetY += (targetOffY - p.offsetY) * 0.06;
+
+          p.el.style.transform = 'translate(' + p.offsetX.toFixed(1) + 'px,' + p.offsetY.toFixed(1) + 'px)';
+          p.el.style.opacity = targetOpacity.toFixed(3);
+        }
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    // ─── Daily Distribution Bar Animation ──────────────────────────────────
+    function initDailyBars() {
+      const bars = document.querySelectorAll('.daily-bar-fill[data-target]');
+      if (!bars.length) return;
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const fills = entry.target.querySelectorAll('.daily-bar-fill[data-target]');
+            fills.forEach((fill, i) => {
+              setTimeout(() => {
+                fill.style.width = fill.dataset.target + '%';
+              }, i * 120);
+            });
+            obs.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.3 });
+      // Observe the parent container
+      const container = document.getElementById('daily-bars');
+      if (container) obs.observe(container);
+    }
+
+    // ─── Session Timer ─────────────────────────────────────────────────────
+    function initSessionTimer() {
+      const el = document.getElementById('session-timer');
+      if (!el) return;
+      const startTime = Date.now();
+      setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const m = Math.floor(elapsed / 60);
+        const s = elapsed % 60;
+        el.textContent = m + ':' + String(s).padStart(2, '0') + ' on this page';
+      }, 1000);
+    }
+
+    // ─── Floating Pill Nav ─────────────────────────────────────────────────
+    function initFloatingNav() {
+      const nav = document.getElementById('main-nav');
+      if (!nav) return;
+      const threshold = window.innerHeight * 0.1;
+      let ticking = false;
+      const navLinks = nav.querySelectorAll('.nav-link');
+      const sectionMap = Array.from(navLinks).map(link => ({
+        link: link,
+        section: document.querySelector(link.getAttribute('href'))
+      })).filter(item => item.section);
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          requestAnimationFrame(() => {
+            nav.classList.toggle('scrolled', window.scrollY > threshold);
+
+            // Highlight active nav link
+            const scrollY = window.scrollY + window.innerHeight * 0.35;
+            let activeLink = null;
+            sectionMap.forEach(item => {
+              if (item.section.offsetTop <= scrollY) activeLink = item.link;
+            });
+            navLinks.forEach(link => link.classList.remove('active'));
+            if (activeLink) activeLink.classList.add('active');
+
+            ticking = false;
+          });
+          ticking = true;
+        }
+      }, { passive: true });
+    }
+
+    // ─── Custom Cursor ─────────────────────────────────────────────────────
+    function initCustomCursor() {
+      if (window.matchMedia('(pointer: coarse)').matches) return;
+      const cursor = document.getElementById('custom-cursor');
+      if (!cursor) return;
+      let mouseX = 0, mouseY = 0, curX = 0, curY = 0;
+      let visible = false;
+
+      document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        if (!visible) { visible = true; cursor.classList.add('visible'); }
+      }, { passive: true });
+
+      document.addEventListener('mouseleave', () => {
+        visible = false;
+        cursor.classList.remove('visible');
+      });
+      document.addEventListener('mouseenter', () => {
+        visible = true;
+        cursor.classList.add('visible');
+      });
+
+      // Hover detection for links and buttons
+      document.addEventListener('mouseover', (e) => {
+        const target = e.target.closest('a, button, [role="button"], .btn-chrome-nav, .btn-support, .amount-pill, .btn-donate, .faq-item-hover');
+        cursor.classList.toggle('hovering', !!target);
+      }, { passive: true });
+      document.addEventListener('mouseout', (e) => {
+        const target = e.target.closest('a, button, [role="button"], .btn-chrome-nav, .btn-support, .amount-pill, .btn-donate, .faq-item-hover');
+        if (target) cursor.classList.remove('hovering');
+      }, { passive: true });
+
+      // Click shrink effect
+      document.addEventListener('mousedown', () => {
+        cursor.classList.add('clicking');
+      });
+      document.addEventListener('mouseup', () => {
+        cursor.classList.remove('clicking');
+      });
+
+      // 120fps lerp loop
+      function tick() {
+        curX += (mouseX - curX) * 0.15;
+        curY += (mouseY - curY) * 0.15;
+        cursor.style.left = curX + 'px';
+        cursor.style.top = curY + 'px';
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+    initCustomCursor();
+
+  </script>
+</body>
+
+</html>
