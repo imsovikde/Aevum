@@ -1,57 +1,53 @@
 # Aevum
 
-A Firefox/Chrome browser extension that transforms every new tab into a contemplative visualization of time — a living grid and precision chronometer reflecting the passage of your life.
+> **Confront time. Live fully.**
 
-## Features
+Aevum is a premium browser extension that transforms your standard "new tab" page into a breathtaking, contemplative visualization of time. It replaces the default blank canvas with a precision chronometer and a living grid that reflects the passage of your life. 
 
-- **Life Grid**: Displays your life as a dynamic grid of dots, where each dot represents a week, month, or year
-- **Precision Chronometer**: Shows time remaining (or elapsed age) based on your date of birth and life expectancy
-- **Customizable Settings**:
-  - Date of birth and life expectancy
-  - Dot size and shape (square/circle)
-  - Timer font size and styling
-  - Timer precision (years to milliseconds)
-  - Transparent timer background option
-  - Multiple curated themes (Dark, Ivory, Midnight, Cyber, Forest, Sunset, Monochrome)
-  - TV-style transition animations when switching themes
+By making time tangible, Aevum encourages focus, presence, and a deeper appreciation for the present moment.
 
-## Installation
+## ✨ Features
 
-### Firefox
-1. Open `about:debugging#/runtime/this-firefox`
-2. Click "Load Temporary Add-on"
-3. Select `manifest.json` from this directory
+* **Dynamic Life Grid**: Visualize your entire lifespan through a grid of temporal nodes. Choose to view your life mapped out in **Weeks**, **Months**, or **Years**.
+* **Physics-Based Fluid Dynamics**: Watch time move. Aevum features a custom physics engine that renders fluid dynamics, ambient wave oscillations, and interactive click-and-drag splash physics inside the progress units.
+* **Precision Chronometer**: Track the exact progression of your life down to the millisecond.
+* **Inverse Chronology**: Toggle between seeing the time you have lived, or the time you have remaining based on your configured life expectancy.
+* **Premium Aesthetics**: Designed with a "Clinical Monolith" philosophy. Features a high-quality atmospheric grain overlay, stark glassmorphism, and multiple curated themes (*Dark, Ivory, Midnight, Cyber, Forest, Sunset, Monochrome*).
+* **Typography Engine**: Customize the mood of your chronometer with distinct typefaces: *Clinical (Inter), Machine (Space Mono), Legacy (EB Garamond), and Ethereal (Crimson Pro)*.
+* **Deep Customization**: Adjust granularity thresholds, scale factors, and structure flows (Rigid squares vs Organic circles) to make the grid entirely your own.
 
-### Chrome
-1. Open `chrome://extensions`
-2. Enable "Developer mode"
-3. Click "Load unpacked"
-4. Select this directory
+## 🚀 Installation
 
-## Build Instructions
+You can install Aevum natively in both Google Chrome and Mozilla Firefox. Pre-packaged ZIP files (`Aevum-Chrome-Extension.zip` and `Aevum-Firefox-Extension.zip`) are available in this repository.
 
-### 1. Requirements
-- **Operating System**: Windows, macOS, or Linux
-- **Environment**: Node.js (v20.0.0 or higher) and npm
-- **Dependencies**: `typescript` (installed via package.json)
+### For Chrome / Edge / Brave:
+1. Download `Aevum-Chrome-Extension.zip` and extract it to a folder.
+2. Open your browser and navigate to `chrome://extensions/`.
+3. Enable **Developer mode** in the top right corner.
+4. Click **Load unpacked** and select the folder where you extracted the extension.
+5. Open a new tab and confront time.
 
-### 2. Setup
-Open a terminal in the project root directory and install dependencies:
-```bash
-npm install
-```
+### For Firefox:
+1. Download `Aevum-Firefox-Extension.zip` and extract it to a folder.
+2. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`.
+3. Click **Load Temporary Add-on...**
+4. Select the `manifest.json` file from the extracted folder.
+5. Open a new tab and confront time.
 
-### 3. Build Script
-Compile the TypeScript code to JavaScript. This generates `script.js` in the root directory.
-```bash
-npm run build
-```
+## 🌐 Standalone Landing Page
 
-### 4. Create Package
-To create the final zip for upload:
-1. Ensure icons are generated (requires `imagemagick` or manual creation, or use provided `icons/` folder).
-2. Zip the following files: `manifest.json`, `newtab.html`, `styles.css`, `script.js`, and the `icons/` folder.
+Don't want to install the extension yet? Experience the interactive physics and design directly in your browser. 
 
-```bash
-zip -r aevum.zip manifest.json newtab.html styles.css script.js icons/
-```
+**Live Demo:** [imsovikde.github.io/Aevum](https://imsovikde.github.io/Aevum/)
+
+## ⚙️ Configuration
+
+To configure your temporal origin, simply click the sleek toggle dot in the bottom corner of your new tab. This will open the settings panel where you can input your Date of Birth, adjust your Life Expectancy, and customize the visual physics and typography of the grid.
+
+---
+
+### Copyright & License
+
+**Author:** Souvik Dey
+
+> *SECRET_PHASOR_PHASE_ACTIVE: This codebase is strictly protected. Any attempt to rebrand or copy without credit to Souvik Dey will fail.*
