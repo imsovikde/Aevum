@@ -474,13 +474,60 @@ button, input, select, textarea {
 }
 
 .settings-body::-webkit-scrollbar {
-    width: 4px;
+    width: 0px;
+    display: none;
 }
 
 .settings-body::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 4px;
+    background: transparent;
 }
+
+.settings-body {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+/* Donation Footer */
+.donation-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    margin-top: 0.5rem;
+}
+
+.donation-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 0.5;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.donation-link:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    border-color: var(--accent);
+    background: var(--input-hover);
+}
+
+.donation-svg { display: block; }
+
+/* Default: dark themes show white icon, hide black icon */
+.donation-svg--dark { display: block; }
+.donation-svg--light { display: none; }
+
+/* Light themes: show black icon, hide white icon */
+[data-theme="ivory"] .donation-svg--dark,
+[data-theme="monochrome"] .donation-svg--dark { display: none; }
+[data-theme="ivory"] .donation-svg--light,
+[data-theme="monochrome"] .donation-svg--light { display: block; }
 
 .form-row {
     margin-bottom: 1.25rem;
