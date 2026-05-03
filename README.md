@@ -1,4 +1,4 @@
-# Aevum
+<h1><img src="icons/icon-48.png" alt="Aevum logo" width="28" height="28" align="left" style="margin-right: 8px;"> Aevum</h1>
 
 > **Confront time. Live fully.**
 
