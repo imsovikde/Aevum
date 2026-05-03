@@ -1952,16 +1952,17 @@
     /* 15. Media Queries */
     @media (max-width: 768px) {
       .input-hint-container {
-        left: 80%;
-        bottom: calc(50% + 25px);
-        gap: 4px;
+        left: 0;
+        right: 0;
+        bottom: -35px;
+        justify-content: center;
       }
       .input-hint-text {
         font-size: 1.2rem;
+        transform: none;
       }
       .input-hint-arrow {
-        width: 30px;
-        height: 20px;
+        display: none;
       }
 
       .theme-hint-container {
