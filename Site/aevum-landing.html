@@ -10,7 +10,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32' fill='none'%3E%3Cpath d='M16 3L29 25H3L16 3Z' stroke='rgba(255,255,255,0.6)' stroke-width='1' fill='none'/%3E%3Cpath d='M16 25L3 25L9.5 14L22.5 14L29 25Z' fill='rgba(255,255,255,0.7)' stroke='none'/%3E%3Cpath d='M16 3L29 25H3L16 3Z' stroke='rgba(255,255,255,0.6)' stroke-width='1' fill='none'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     /* 1. CSS Custom Properties */
     :root {
@@ -459,6 +459,97 @@
       display: inline-block;
       text-align: center;
       margin-bottom: 0.5rem;
+      position: relative;
+    }
+
+    .input-hint-container {
+      position: absolute;
+      left: calc(100% + 15px);
+      bottom: calc(50% + 15px);
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      pointer-events: none;
+      opacity: 0;
+      animation: fadeUpHint 0.8s var(--ease-smooth) 1.2s forwards;
+      z-index: 10;
+    }
+
+    .input-hint-text {
+      font-family: 'Caveat', cursive;
+      font-size: 1.9rem;
+      color: rgba(255, 255, 255, 0.9);
+      white-space: nowrap;
+      transform: rotate(-4deg) translateY(-10px);
+      letter-spacing: 0.05em;
+    }
+
+    .input-hint-arrow {
+      color: rgba(255, 255, 255, 0.8);
+      flex-shrink: 0;
+      transform: rotate(5deg);
+    }
+
+    .theme-hint-container {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 10;
+    }
+
+    .theme-hint-text {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: rgba(255, 255, 255, 0.9);
+      white-space: nowrap;
+      transform: rotate(3deg);
+      letter-spacing: 0.05em;
+    }
+
+    .theme-hint-arrow {
+      color: rgba(255, 255, 255, 0.8);
+      transform: rotate(-15deg) translateY(6px);
+      flex-shrink: 0;
+    }
+
+    .move-hint-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+      opacity: 0;
+      animation: fadeUpHint 0.8s var(--ease-smooth) 1.5s forwards;
+      transition: opacity 0.4s ease;
+      margin-left: 10px;
+    }
+
+    .move-hint-text {
+      font-family: 'Caveat', cursive;
+      font-size: 1.7rem;
+      color: rgba(255, 255, 255, 0.9);
+      white-space: nowrap;
+      transform: rotate(-3deg);
+      letter-spacing: 0.05em;
+    }
+
+    .move-hint-arrow {
+      color: rgba(255, 255, 255, 0.8);
+      transform: rotate(10deg);
+      flex-shrink: 0;
+    }
+
+    @keyframes fadeUpHint {
+      from {
+        opacity: 0;
+        transform: translateY(20px) rotate(-4deg);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) rotate(0);
+      }
     }
 
     .birth-input {
@@ -1860,6 +1951,11 @@
 
     /* 15. Media Queries */
     @media (max-width: 768px) {
+      .input-hint-container,
+      .theme-hint-container {
+        display: none !important;
+      }
+
       .nav-center {
         display: none;
       }
@@ -2232,6 +2328,51 @@
       clip-path: circle(0% at 50% 50%);
       /* No CSS transition — animated via rAF for 120fps */
     }
+
+    /* 21. Back to Top */
+    .back-to-top-btn {
+      position: fixed;
+      right: 1.5rem;
+      bottom: 1.5rem;
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--text-primary);
+      border-radius: 50%;
+      cursor: crosshair;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 10001; /* Ensure it stays above the grain overlay and all content */
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(20px) scale(0.9);
+    }
+
+    .back-to-top-btn.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0) scale(1);
+    }
+
+    .back-to-top-btn:hover {
+      color: var(--accent-bright);
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.18);
+      transform: translateY(-3px) scale(1.1);
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+    }
+
+    @media (max-width: 480px) {
+      .back-to-top-btn {
+        right: 1rem;
+        bottom: 1rem;
+      }
+    }
   </style>
 </head>
 
@@ -2267,11 +2408,10 @@
           <line x1="18" y1="12" x2="18" y2="12"></line>
           <line x1="8" y1="16" x2="16" y2="16"></line>
         </svg></button>
-      <a href="#donation" class="btn-support"><svg class="btn-support-icon" width="16" height="16" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
-          aria-hidden="true">
-          <path
-            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+      <a href="#donation" class="btn-support"><svg class="btn-support-icon" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150" aria-hidden="true">
+          <path d="m121.8 42.9-.8-4.3c-.8-3.2-2.6-6.3-6-7.1-1.4-.4-3.4-.8-4-3.6l-1.9-10.5c-.8-3.9-2.6-5.4-6.3-6.9-3.5-1.3-9.4-2.8-19.3-3.2-12.6-.6-22.1 0-29.4.9-10.8 1.5-16.5 4.2-16.5 8.6 0 2.5 1.5 4.7 4.6 5.9 4.3 1.9 12.8 3.9 30.6 4.2 6.8 0 13.6-.4 20.6-1.2 3.9-.5 4.1-7.5-1.2-7.5-6.2.8-12.2 1.2-18.6 1.2-8.7 0-15.6-.4-22.2-1.8-.7-.2-.9-1.2.1-1.3 5.3-1.2 13-1.8 21.9-1.8 7.4 0 15.5.6 20 1.4l5.1.9c2 .6 2.9 1.6 3.1 3l2.2 10.5c.2.8-.4 1.4-1 1.4-7.2.8-16 1.9-27.8 1.9s-21.9-.7-34.9-2.9c-5.7-.8-10 2.2-11.3 6.9L27.4 44c-.8 4.7 2 10.7 7.8 11.7 11.7 1.9 23.7 3.6 39.2 3.6 8.3 0 18-.5 25.5-1.3 1.9-.2 3.5 1.2 3.1 3.2L96.5 126c-.4 5.3-3.1 8.4-8.2 9.4-2.9.4-6.2.8-9.7 1l-11.4-.2c-8.3.2-12.9-2.4-13.9-10.6l-6.4-60.5c-.6-4.7-6.8-4.9-8-.4l6.9 64.6c.7 7.1 6.1 11.8 13.9 12.8 5.2.8 13.2 1 21.1 1 3.7 0 7.9-.4 10.5-1 6.6-1.6 11.9-6.1 12.7-13.6l7.4-70.1c.2-1 1.2-2.1 2.2-2.3 7.4-.8 9.4-6.4 8.4-12.3zm-11 5.4c-7.8 1-20.3 2.8-35.8 3-12.8 0-23.5-1-37.4-3.4-2.4-.4-3-1.6-2.6-4.7.6-4.1 1.4-5.6 5.3-5.1 3.3.4 5.8 1.4 13.6 2 13.3 1.2 30.6 2 55.2-2 3.7-.5 5.5.6 5.3 6.5 0 2.3-2 3.5-3.6 3.7" style="fill:#ffffff"/>
+          <path d="m51.3 73.3 5.2 51.5c.5 3.7 3.6 7.3 8 7.7 6 .4 12.5.6 20.5 0 3.7 0 7.6-3.2 8-7.5l5.3-57.2c-14.2-4.9-19.7 4.7-35.1 6.5-5.8.4-9.5-.4-11.9-1" style="fill:#fee00d">
+            <animate attributeName="d" dur="5s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" keyTimes="0; 0.5; 0.8; 1" values="m55.5 115 1.0 9.8c0.5 3.7 3.6 7.3 8 7.7 6 0.4 12.5 0.6 20.5 0 3.7 0 7.6-3.2 8-7.5l1.1-12.0c-11.6-1.8-16.2 1.7-28.8 2.3-4.8 0.1-7.8-0.1-9.8-0.3z; m51.3 73.3 5.2 51.5c0.5 3.7 3.6 7.3 8 7.7 6 0.4 12.5 0.6 20.5 0 3.7 0 7.6-3.2 8-7.5l5.3-57.2c-14.2-4.9-19.7 4.7-35.1 6.5-5.8 0.4-9.5-0.4-11.9-1z; m51.3 73.3 5.2 51.5c0.5 3.7 3.6 7.3 8 7.7 6 0.4 12.5 0.6 20.5 0 3.7 0 7.6-3.2 8-7.5l5.3-57.2c-14.2-4.9-19.7 4.7-35.1 6.5-5.8 0.4-9.5-0.4-11.9-1z; m55.5 115 1.0 9.8c0.5 3.7 3.6 7.3 8 7.7 6 0.4 12.5 0.6 20.5 0 3.7 0 7.6-3.2 8-7.5l1.1-12.0c-11.6-1.8-16.2 1.7-28.8 2.3-4.8 0.1-7.8-0.1-9.8-0.3z"/>
           </path>
         </svg><span class="btn-support-text">Support <span class="support-text-hide">the Project</span></span></a>
       <a href="https://chrome.google.com/webstore/detail/aevum/EXTENSION-ID-PLACEHOLDER" target="_blank"
@@ -2365,6 +2505,13 @@
         <input type="number" id="birthYearInput" placeholder="1995" min="1920" max="2020" class="birth-input"
           aria-label="Birth year">
         <span class="birth-label">BIRTH YEAR</span>
+        
+        <div class="input-hint-container">
+          <svg width="60" height="40" viewBox="0 0 60 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-hint-arrow">
+            <path d="M55,5 C 45,10 25,15 5,35 M 15,22 L 5,35 L 22,38" />
+          </svg>
+          <span class="input-hint-text">Enter your birth year</span>
+        </div>
       </div>
       <div id="demo-grid" role="grid" aria-label="Life grid visualization"></div>
       <div class="stats-bar" id="stats-bar" data-reveal data-reveal-delay="300">
@@ -2558,6 +2705,13 @@
           <button class="theme-pill" data-theme="#120500,#ff6b35,#8a3a10">Sunset</button>
           <button class="theme-pill" data-theme="#050505,#c8c8c8,#606060">Mono</button>
         </div>
+        
+        <div class="theme-hint-container">
+          <svg width="40" height="30" viewBox="0 0 60 40" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="theme-hint-arrow">
+            <path d="M55,5 C 45,10 25,15 5,35 M 15,22 L 5,35 L 22,38"></path>
+          </svg>
+          <span class="theme-hint-text">Click here</span>
+        </div>
       </div>
       <!-- Card B: Granularity -->
       <div class="bento-card" data-reveal data-reveal-delay="100">
@@ -2590,9 +2744,18 @@
       <div class="bento-card" data-reveal>
         <p class="bento-title">You Are Here</p>
         <p class="bento-body" style="max-width:360px">That glowing square is not a pixel. It is you — right now, this second, irretrievably alive and burning through the only resource that cannot be earned back. Look at it.</p>
-        <div class="mini-physics-wrapper" id="mini-physics-wrapper">
-          <div class="life-unit current" id="mini-physics-cell"
-            style="width:100%;height:100%;border-radius:2px;background:var(--void);"></div>
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
+          <div class="mini-physics-wrapper" id="mini-physics-wrapper" style="margin-top:0;">
+            <div class="life-unit current" id="mini-physics-cell"
+              style="width:100%;height:100%;border-radius:2px;background:var(--void);"></div>
+          </div>
+          
+          <div class="move-hint-container">
+            <svg width="40" height="30" viewBox="0 0 60 40" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="move-hint-arrow">
+              <path d="M55,5 C 45,10 25,15 5,35 M 15,22 L 5,35 L 22,38" />
+            </svg>
+            <span class="move-hint-text">move here</span>
+          </div>
         </div>
       </div>
       <!-- Card E: Open Source -->
@@ -2715,7 +2878,7 @@
     <div class="technical-cols">
       <div data-reveal>
         <span class="tech-stat-label">Total Size</span>
-        <div class="tech-stat">~24KB</div>
+        <div class="tech-stat">~37KB</div>
         <p class="tech-body">No bloat. No React. No dependencies. Vanilla HTML, CSS, and TypeScript compiled to plain
           JavaScript.</p>
       </div>
@@ -2975,7 +3138,7 @@
       </div>
     </div>
     <a href="https://buymeacoffee.com/souvikdey" target="_blank" rel="noopener noreferrer" class="btn-donate" data-reveal
-      data-reveal-delay="300">Support with a coffee ☕</a>
+      data-reveal-delay="300">Support with a coffee <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150" style="width:1.2em;height:1.2em;vertical-align:middle;display:inline-block;"><path d="m121.8 42.9-.8-4.3c-.8-3.2-2.6-6.3-6-7.1-1.4-.4-3.4-.8-4-3.6l-1.9-10.5c-.8-3.9-2.6-5.4-6.3-6.9-3.5-1.3-9.4-2.8-19.3-3.2-12.6-.6-22.1 0-29.4.9-10.8 1.5-16.5 4.2-16.5 8.6 0 2.5 1.5 4.7 4.6 5.9 4.3 1.9 12.8 3.9 30.6 4.2 6.8 0 13.6-.4 20.6-1.2 3.9-.5 4.1-7.5-1.2-7.5-6.2.8-12.2 1.2-18.6 1.2-8.7 0-15.6-.4-22.2-1.8-.7-.2-.9-1.2.1-1.3 5.3-1.2 13-1.8 21.9-1.8 7.4 0 15.5.6 20 1.4l5.1.9c2 .6 2.9 1.6 3.1 3l2.2 10.5c.2.8-.4 1.4-1 1.4-7.2.8-16 1.9-27.8 1.9s-21.9-.7-34.9-2.9c-5.7-.8-10 2.2-11.3 6.9L27.4 44c-.8 4.7 2 10.7 7.8 11.7 11.7 1.9 23.7 3.6 39.2 3.6 8.3 0 18-.5 25.5-1.3 1.9-.2 3.5 1.2 3.1 3.2L96.5 126c-.4 5.3-3.1 8.4-8.2 9.4-2.9.4-6.2.8-9.7 1l-11.4-.2c-8.3.2-12.9-2.4-13.9-10.6l-6.4-60.5c-.6-4.7-6.8-4.9-8-.4l6.9 64.6c.7 7.1 6.1 11.8 13.9 12.8 5.2.8 13.2 1 21.1 1 3.7 0 7.9-.4 10.5-1 6.6-1.6 11.9-6.1 12.7-13.6l7.4-70.1c.2-1 1.2-2.1 2.2-2.3 7.4-.8 9.4-6.4 8.4-12.3zm-11 5.4c-7.8 1-20.3 2.8-35.8 3-12.8 0-23.5-1-37.4-3.4-2.4-.4-3-1.6-2.6-4.7.6-4.1 1.4-5.6 5.3-5.1 3.3.4 5.8 1.4 13.6 2 13.3 1.2 30.6 2 55.2-2 3.7-.5 5.5.6 5.3 6.5 0 2.3-2 3.5-3.6 3.7" style="fill:#FFFFFF"/><path d="m51.3 73.3 5.2 51.5c.5 3.7 3.6 7.3 8 7.7 6 .4 12.5.6 20.5 0 3.7 0 7.6-3.2 8-7.5l5.3-57.2c-14.2-4.9-19.7 4.7-35.1 6.5-5.8.4-9.5-.4-11.9-1" style="fill:#fee00d"><animate attributeName="d" dur="5s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1" keyTimes="0; 0.5; 0.8; 1" values="m55.5 115 1.0 9.8c0.5 3.7 3.6 7.3 8 7.7 6 0.4 12.5 0.6 20.5 0 3.7 0 7.6-3.2 8-7.5l1.1-12.0c-11.6-1.8-16.2 1.7-28.8 2.3-4.8 0.1-7.8-0.1-9.8-0.3z; m51.3 73.3 5.2 51.5c0.5 3.7 3.6 7.3 8 7.7 6 0.4 12.5 0.6 20.5 0 3.7 0 7.6-3.2 8-7.5l5.3-57.2c-14.2-4.9-19.7 4.7-35.1 6.5-5.8 0.4-9.5-0.4-11.9-1z; m51.3 73.3 5.2 51.5c0.5 3.7 3.6 7.3 8 7.7 6 0.4 12.5 0.6 20.5 0 3.7 0 7.6-3.2 8-7.5l5.3-57.2c-14.2-4.9-19.7 4.7-35.1 6.5-5.8 0.4-9.5-0.4-11.9-1z; m55.5 115 1.0 9.8c0.5 3.7 3.6 7.3 8 7.7 6 0.4 12.5 0.6 20.5 0 3.7 0 7.6-3.2 8-7.5l1.1-12.0c-11.6-1.8-16.2 1.7-28.8 2.3-4.8 0.1-7.8-0.1-9.8-0.3z"/></path></svg></a>
     <div class="amount-pills" data-reveal data-reveal-delay="400">
       <a href="https://buymeacoffee.com/souvikdey" target="_blank" rel="noopener noreferrer" class="amount-pill">$2</a>
       <a href="https://buymeacoffee.com/souvikdey" target="_blank" rel="noopener noreferrer" class="amount-pill">$5</a>
@@ -2985,7 +3148,7 @@
   </section>
 
   <!-- SECTION 9: Footer -->
-  <footer id="main-footer">
+  <footer id="main-footer" style="position: relative;">
     <div class="footer-inner">
       <div>
         <div class="footer-brand">
@@ -3018,7 +3181,15 @@
       <span>NEXT YEAR IN <span id="footer-countdown"
           style="color:#555;font-variant-numeric:tabular-nums">---</span></span>
     </div>
+
   </footer>
+
+  <!-- Floating Back to Top -->
+  <button id="backToTopBtn" onclick="window.scrollTo({top:0, behavior:'smooth'})" class="back-to-top-btn" aria-label="Back to top" title="Back to top">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 19V5M5 12l7-7 7 7"/>
+    </svg>
+  </button>
 
   <script>
     // ─── FluidSimulation Class (ported exactly from script.js) ──────────────────
@@ -3535,9 +3706,17 @@
       requestAnimationFrame(masterLoop);
     }
 
+
     // ─── Birth Year Input ─────────────────────────────────────────────────────────
     document.getElementById('birthYearInput').addEventListener('input', (e) => {
       clearTimeout(debounceTimer);
+      const hint = document.querySelector('.input-hint-container');
+      if (hint) {
+        hint.style.transition = 'opacity 0.4s ease';
+        hint.style.opacity = '0';
+        setTimeout(() => hint.remove(), 400);
+      }
+      
       const val = parseInt(e.target.value);
       if (val >= 1920 && val <= 2020) {
         debounceTimer = setTimeout(() => {
@@ -3665,11 +3844,61 @@
               });
               pill.style.color = theme.fg;
               revealRafId = null;
+
+              repositionThemeHint(0);
             }
           }
           revealRafId = requestAnimationFrame(frame);
         });
       });
+
+      function repositionThemeHint(delay = 0) {
+        const hintContainer = card.querySelector('.theme-hint-container');
+        if (!hintContainer) return;
+
+        const pills = Array.from(card.querySelectorAll('.theme-pill'));
+        const inactivePills = pills.filter(p => !p.classList.contains('active'));
+        if (inactivePills.length === 0) return;
+
+        const targetPill = inactivePills[Math.floor(Math.random() * inactivePills.length)];
+        const cardRect = card.getBoundingClientRect();
+        const pillRect = targetPill.getBoundingClientRect();
+
+        let topPos = pillRect.top - cardRect.top - 35;
+        let leftPos = pillRect.left - cardRect.left + (pillRect.width / 2) + 10;
+
+        const arrow = hintContainer.querySelector('.theme-hint-arrow');
+
+        if (topPos < 80) {
+          topPos = pillRect.bottom - cardRect.top + 5;
+          if (arrow) arrow.style.transform = 'scaleY(-1) rotate(-15deg) translateY(-6px)';
+        } else {
+          if (arrow) arrow.style.transform = 'rotate(-15deg) translateY(6px)';
+        }
+
+        if (leftPos + 120 > cardRect.width) leftPos = cardRect.width - 130;
+        if (leftPos < 10) leftPos = 10;
+
+        hintContainer.style.top = `${topPos}px`;
+        hintContainer.style.left = `${leftPos}px`;
+
+        const activePill = card.querySelector('.theme-pill.active');
+        const themeName = activePill ? activePill.textContent.trim() : 'Dark';
+        const theme = THEME_DATA[themeName] || THEME_DATA['Dark'];
+
+        hintContainer.style.color = theme.fg;
+        const text = hintContainer.querySelector('.theme-hint-text');
+        if (arrow) arrow.style.color = theme.fg;
+        if (text) text.style.color = theme.fg;
+
+        hintContainer.style.animation = 'none';
+        hintContainer.offsetHeight; // trigger reflow
+        hintContainer.style.animation = `fadeUpHint 0.8s var(--ease-smooth) ${delay}s forwards`;
+      }
+
+      // Initial positioning
+      setTimeout(() => repositionThemeHint(1.5), 100);
+
     })();
 
     // ─── Bento: Granularity Toggle ───────────────────────────────────────────────
@@ -4509,7 +4738,24 @@
     }
     initCustomCursor();
 
+    // ─── Back to Top Scroll Logic ──────────────────────────────────────────
+    function initBackToTop() {
+      const btn = document.getElementById('backToTopBtn');
+      if (!btn) return;
+      window.addEventListener('scroll', () => {
+        const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+        // Automatically pop up after 30% of the total page scrolling
+        if (window.scrollY > scrollHeight * 0.3) {
+          btn.classList.add('visible');
+        } else {
+          btn.classList.remove('visible');
+        }
+      }, { passive: true });
+    }
+    initBackToTop();
   </script>
+
+
 </body>
 
 </html>
