@@ -1951,9 +1951,28 @@
 
     /* 15. Media Queries */
     @media (max-width: 768px) {
-      .input-hint-container,
+      .input-hint-container {
+        left: 80%;
+        bottom: calc(50% + 25px);
+        gap: 4px;
+      }
+      .input-hint-text {
+        font-size: 1.2rem;
+      }
+      .input-hint-arrow {
+        width: 30px;
+        height: 20px;
+      }
+
       .theme-hint-container {
-        display: none !important;
+        gap: 2px;
+      }
+      .theme-hint-text {
+        font-size: 1.1rem;
+      }
+      .theme-hint-arrow {
+        width: 25px;
+        height: 20px;
       }
 
       .nav-center {
