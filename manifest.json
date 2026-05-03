@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Aevum - Confront time. Live fully.",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Transform every new tab into a contemplative visualization of time. A living grid and precision chronometer reflecting your life.",
   "permissions": [
     "storage"
