@@ -1,8 +1,6 @@
 {
-  "framework": null,
-  "buildCommand": null,
-  "installCommand": null,
-  "outputDirectory": ".",
+  "buildCommand": "mkdir -p public && cp aevum-landing.html public/",
+  "outputDirectory": "public",
   "rewrites": [
     {
       "source": "/",
