@@ -1,0 +1,10 @@
+{
+  "buildCommand": "echo 'Skipping build'",
+  "outputDirectory": "Site",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/aevum-landing.html"
+    }
+  ]
+}
