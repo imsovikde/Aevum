@@ -1,0 +1,16 @@
+{
+  "framework": null,
+  "buildCommand": null,
+  "installCommand": null,
+  "outputDirectory": ".",
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/aevum-landing.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/aevum-landing.html"
+    }
+  ]
+}
