@@ -1,9 +1,9 @@
 <h1 align="center" style="margin: 40px 0 20px 0;">
-  <img 
-    src="aevum-logo.svg" 
-    width="48" 
-    height="48" 
-    alt="Aevum logo" 
+  <img
+    src="aevum-logo.svg"
+    width="48"
+    height="48"
+    alt="Aevum logo"
     style="vertical-align: middle; margin-right: 14px; margin-top: -6px;">
   Aevum
 </h1>
@@ -94,9 +94,23 @@ That is the power of Aevum.
 If this made you feel something real — **star the repository** and install it.
 
 Because the next time you open a new tab, you won’t see a blank page.  
-You’ll see your life.
-
+You’ll see your life.  
 And you’ll finally start living like it matters.
+
+---
+
+### If Aevum Changed Something in You
+
+[<img src="icons/support-icon.svg" width="28" height="28" alt="Support" style="vertical-align: middle; margin-right: 10px;"> **Keep it alive.**](https://buymeacoffee.com/souvikdey)
+
+Aevum is free and always will be. There is no company behind it.  
+It is one person building a tool they wanted to exist.
+
+If looking at your life grid made you close a useless tab, start something you’ve been postponing, or simply breathe differently for a moment — consider leaving the cost of a coffee. It keeps the server running and the code maintained.
+
+You are never obligated. Aevum will never ask twice.
+
+**[Support with a coffee ☕](https://buymeacoffee.com/souvikdey)**
 
 ---
 
