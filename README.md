@@ -1,11 +1,12 @@
-<p align="center" style="display: flex; align-items: center; justify-content: center; gap: 16px; margin: 40px 0 20px 0;">
+<h1 align="center" style="margin: 40px 0 20px 0;">
   <img 
     src="aevum-logo.svg" 
     width="48" 
     height="48" 
-    alt="Aevum logo">
-  <span style="font-size: 3.8rem; font-weight: 700; line-height: 1;">Aevum</span>
-</p>
+    alt="Aevum logo" 
+    style="vertical-align: middle; margin-right: 14px; margin-top: -6px;">
+  Aevum
+</h1>
 
 <p align="center">
   <strong>Confront time.<br>Live fully.</strong>
