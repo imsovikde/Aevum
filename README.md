@@ -19,7 +19,11 @@
   <a href="https://github.com/imsovikde/Aevum/releases/latest"><img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge" alt="MIT"></a>
 </p>
 
-![Aevum — Living fluid physics grid](https://github.com/imsovikde/Aevum/raw/main/demo/hero-fluid.gif)
+<p align="center">
+  <img src="https://github.com/imsovikde/Aevum/raw/main/demo/hero-fluid.gif" 
+       alt="Aevum — Living fluid physics grid" 
+       style="max-width: 100%; width: 100%; height: auto; border-radius: 8px;">
+</p>
 
 **The glowing square in the middle is you. Right now.**
 
